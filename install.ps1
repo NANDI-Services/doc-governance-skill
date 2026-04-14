@@ -14,6 +14,30 @@ $DestDir = Join-Path $RepoRoot ".ai/skills/$SkillName"
 $AgentsFile = Join-Path $RepoRoot 'AGENTS.md'
 $MarkerStart = "<!-- $SkillName:start -->"
 $MarkerEnd = "<!-- $SkillName:end -->"
+$AgentsTemplate = Join-Path $ScriptDir 'templates/AGENTS.append.md'
+
+function Fail([string]$Message) {
+    throw "[$SkillName] $Message"
+}
+
+function Remove-ExistingBlock([string]$Path, [string]$StartMarker, [string]$EndMarker) {
+    $content = Get-Content -Path $Path -Raw
+    $pattern = "(?s)\r?\n?" + [regex]::Escape($StartMarker) + ".*?" + [regex]::Escape($EndMarker) + "\r?\n?"
+    $cleaned = [regex]::Replace($content, $pattern, "`r`n")
+    Set-Content -Path $Path -Value $cleaned
+}
+
+if (-not (Test-Path -Path $AgentsTemplate -PathType Leaf)) {
+    Fail "Missing template file: $AgentsTemplate"
+}
+
+$templateContent = Get-Content -Path $AgentsTemplate -Raw
+if ($templateContent -notmatch [regex]::Escape($MarkerStart)) {
+    Fail "Template missing start marker: $MarkerStart"
+}
+if ($templateContent -notmatch [regex]::Escape($MarkerEnd)) {
+    Fail "Template missing end marker: $MarkerEnd"
+}
 
 New-Item -ItemType Directory -Force -Path $DestDir | Out-Null
 Copy-Item -Force (Join-Path $ScriptDir 'SKILL.md') $DestDir
@@ -24,35 +48,15 @@ if (-not (Test-Path $AgentsFile)) {
 }
 
 $agentsContent = Get-Content -Raw $AgentsFile
-if ($agentsContent -notmatch [regex]::Escape($MarkerStart)) {
-$block = @"
-
-$MarkerStart
-## Installed Skill: repo-doc-governance
-
-Before closing any meaningful task, run the `repo-doc-governance` skill.
-
-Apply it after code, config, workflow, architecture, security, contributor-process, CI/CD, API, release, or ops changes.
-
-Do not invoke it for cosmetic-only, comments-only, typo-only, or non-behavioral refactors.
-
-The skill decides whether to update documents such as:
-- README.md
-- AGENTS.md
-- CONTRIBUTING.md
-- SECURITY.md
-- CHANGELOG.md
-- ARCHITECTURE.md
-- OPERATIONS.md
-- TROUBLESHOOTING.md
-- API.md
-- docs/**
-
-Always end with the exact minimal report required by the skill.
-$MarkerEnd
-"@
-    Add-Content -Path $AgentsFile -Value $block
+if ($agentsContent -match [regex]::Escape($MarkerStart)) {
+    Remove-ExistingBlock -Path $AgentsFile -StartMarker $MarkerStart -EndMarker $MarkerEnd
 }
+
+$agentsContent = Get-Content -Raw $AgentsFile
+if ($agentsContent.Length -gt 0 -and -not $agentsContent.EndsWith("`r`n")) {
+    Add-Content -Path $AgentsFile -Value ""
+}
+Add-Content -Path $AgentsFile -Value $templateContent
 
 Write-Host "Installed $SkillName into $DestDir"
 Write-Host "AGENTS.md updated: $AgentsFile"

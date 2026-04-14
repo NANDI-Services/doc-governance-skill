@@ -1,13 +1,13 @@
 <!-- repo-doc-governance:start -->
 ## Installed Skill: repo-doc-governance
 
-Before closing any meaningful task, run the `repo-doc-governance` skill.
+Run this skill after meaningful repository changes to decide whether documentation updates are required.
 
-Apply it after code, config, workflow, architecture, security, contributor-process, CI/CD, API, release, or ops changes.
+Use it for code, config, CI/CD, architecture, API, security, contributor workflow, release, and operations-impacting changes.
 
-Do not invoke it for cosmetic-only, comments-only, typo-only, or non-behavioral refactors.
+Do not use it for cosmetic-only edits, typo-only fixes, comment-only updates, or behavior-neutral refactors.
 
-The skill decides whether to update documents such as:
+If impact exists, route updates to the right document(s):
 - README.md
 - AGENTS.md
 - CONTRIBUTING.md
@@ -19,5 +19,5 @@ The skill decides whether to update documents such as:
 - API.md
 - docs/**
 
-Always end with the exact minimal report required by the skill.
+Always emit the minimal completion block defined in SKILL.md.
 <!-- repo-doc-governance:end -->

@@ -55,15 +55,25 @@ Also useful in any agent environment that can consume a root-level `SKILL.md` wi
 - `LICENSE`: open-source license for public distribution
 
 ## Installation
-### From GitHub Repository (skills.sh)
+
+### From skills.sh (Recommended)
+
+**Install directly:**
 ```bash
 npx skills add NANDI-Services/doc-governance-skill
 ```
 
-List discoverable skills before adding:
+**Or list skills in this repository first:**
 ```bash
 npx skills add NANDI-Services/doc-governance-skill --list
 ```
+
+**Search for the skill on skills.sh CLI:**
+```bash
+npx skills find repo-doc-governance
+```
+
+**Direct link: https://skills.sh/@nandi-services/doc-governance-skill (when available on leaderboard)
 
 ### Local Installation (Script-Based)
 Linux/macOS:
@@ -78,7 +88,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\install.ps1
 ```
 
-### Local Installation (CLI Path, If Supported by Your CLI Version)
+### Local Installation (CLI Path)
 ```bash
 npx skills add /absolute/path/to/doc-governance-skill
 ```

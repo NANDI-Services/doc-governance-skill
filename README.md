@@ -2,6 +2,8 @@
 
 Installable documentation-governance skill for the skills.sh ecosystem.
 
+Canonical skill ID: `doc-governance-skill`.
+
 ## Quick Start
 1. Install the skill from GitHub:
 ```bash
@@ -70,10 +72,13 @@ npx skills add NANDI-Services/doc-governance-skill --list
 
 **Search for the skill on skills.sh CLI:**
 ```bash
-npx skills find repo-doc-governance
+npx skills find doc-governance-skill
 ```
 
-**Direct link: https://skills.sh/@nandi-services/doc-governance-skill (when available on leaderboard)
+**Browse on web search (skills.sh):**
+- Visit: https://skills.sh/
+- Search for: `doc-governance-skill` or `NANDI-Services`
+- Note: web search visibility depends on leaderboard indexing/telemetry, while direct CLI install works immediately.
 
 ### Local Installation (Script-Based)
 Linux/macOS:

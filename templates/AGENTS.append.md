@@ -1,5 +1,5 @@
 <!-- repo-doc-governance:start -->
-## Installed Skill: repo-doc-governance
+## Installed Skill: doc-governance-skill
 
 Run this skill after meaningful repository changes to decide whether documentation updates are required.
 

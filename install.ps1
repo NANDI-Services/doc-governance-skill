@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
-$SkillName = 'repo-doc-governance'
+$SkillName = 'doc-governance-skill'
+$MarkerName = 'repo-doc-governance'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 try {
@@ -13,8 +14,8 @@ try {
 $DestDir = Join-Path $RepoRoot ".ai/skills/$SkillName"
 $SkillsBase = Join-Path $RepoRoot '.ai/skills'
 $AgentsFile = Join-Path $RepoRoot 'AGENTS.md'
-$MarkerStart = "<!-- $SkillName:start -->"
-$MarkerEnd = "<!-- $SkillName:end -->"
+$MarkerStart = "<!-- $MarkerName:start -->"
+$MarkerEnd = "<!-- $MarkerName:end -->"
 $AgentsTemplate = Join-Path $ScriptDir 'templates/AGENTS.append.md'
 
 function Fail([string]$Message) {

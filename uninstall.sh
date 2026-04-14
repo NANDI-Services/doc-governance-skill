@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SKILL_NAME="repo-doc-governance"
+SKILL_NAME="doc-governance-skill"
+MARKER_NAME="repo-doc-governance"
 die() {
   echo "[${SKILL_NAME}] ERROR: $*" >&2
   exit 1
@@ -15,8 +16,8 @@ fi
 
 DEST_DIR="$REPO_ROOT/.ai/skills/$SKILL_NAME"
 AGENTS_FILE="$REPO_ROOT/AGENTS.md"
-MARKER_START="<!-- ${SKILL_NAME}:start -->"
-MARKER_END="<!-- ${SKILL_NAME}:end -->"
+MARKER_START="<!-- ${MARKER_NAME}:start -->"
+MARKER_END="<!-- ${MARKER_NAME}:end -->"
 
 remove_existing_block() {
   local file_path="$1"

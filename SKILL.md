@@ -1,5 +1,5 @@
 ---
-name: repo-doc-governance
+name: doc-governance-skill
 description: Decide doc-impact after meaningful code, config, CI/CD, security, architecture, API, or workflow changes, route updates to the right files, and avoid activation for cosmetic-only or behavior-neutral edits.
 ---
 

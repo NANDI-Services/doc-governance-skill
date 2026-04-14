@@ -4,7 +4,7 @@ Use this checklist before publishing a new tag.
 
 ## Discovery and Metadata
 - [ ] `SKILL.md` contains valid YAML frontmatter (`name`, `description`).
-- [ ] Skill name is stable and canonical (`repo-doc-governance`).
+- [ ] Skill name is stable and canonical (`doc-governance-skill`).
 - [ ] Description clearly states when to use and when not to use the skill.
 
 ## Documentation Quality

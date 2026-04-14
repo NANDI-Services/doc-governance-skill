@@ -9,6 +9,8 @@ Use this checklist before publishing a new tag.
 
 ## Documentation Quality
 - [ ] `README.md` reflects current behavior and install methods.
+- [ ] `SECURITY.md` reflects current disclosure process and scope.
+- [ ] `CONTRIBUTING.md` reflects current contribution and validation workflow.
 - [ ] Validation commands in `README.md` were run successfully.
 - [ ] `templates/AGENTS.append.md` is aligned with `SKILL.md` rules.
 

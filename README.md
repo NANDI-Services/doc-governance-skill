@@ -20,6 +20,9 @@ Also useful in any agent environment that can consume a root-level `SKILL.md` wi
 
 ## Repository Structure
 - `SKILL.md`: skill metadata and governance logic
+- `SECURITY.md`: security disclosure process and hardening policy
+- `CONTRIBUTING.md`: contribution expectations and validation baseline
+- `CODE_OF_CONDUCT.md`: collaboration and behavior expectations
 - `install.sh`: local installer for Unix-like environments
 - `install.ps1`: local installer for Windows PowerShell
 - `uninstall.sh`: local uninstaller for Unix-like environments
@@ -93,6 +96,7 @@ Do not update docs for behavior-neutral edits:
 - Install scripts only copy local files and manage a marker-delimited block in `AGENTS.md`.
 - The optional pre-commit hook is non-blocking and warning-only.
 - This repository intentionally avoids opaque automation and external runtime dependencies.
+- For public repositories, security and policy reporting contact is `contact@nandi.com.ar`.
 
 ## Uninstall and Maintenance
 Uninstall local installation:
@@ -144,6 +148,7 @@ Current repo is publication-oriented when these conditions pass:
 - root `SKILL.md` includes valid YAML frontmatter (`name`, `description`)
 - `npx skills add ... --list` discovers the skill
 - install/uninstall scripts are idempotent
+- security and contribution policies are present (`SECURITY.md`, `CONTRIBUTING.md`)
 - license and release checklist are present
 
 See `RELEASE_CHECKLIST.md` for a concise pre-release runbook.

@@ -1,6 +1,6 @@
 ---
 name: repo-doc-governance
-description: Decide if a completed repository change requires documentation updates, route updates to the correct document, and emit a minimal completion report. Use after meaningful code, config, security, CI/CD, architecture, API, or workflow changes. Do not use for cosmetic-only or behavior-neutral changes.
+description: Decide doc-impact after meaningful code, config, CI/CD, security, architecture, API, or workflow changes, route updates to the right files, and avoid activation for cosmetic-only or behavior-neutral edits.
 ---
 
 # Repo Doc Governance
@@ -33,6 +33,22 @@ Do not run this skill for behavior-neutral edits:
 - internal refactors with no user/developer/operator/security impact
 - test-only edits that do not change contributor expectations
 - temporary debugging changes removed before completion
+
+## Activation Signals
+Common request patterns that should activate this skill:
+- "update docs after changing CI pipeline"
+- "we changed setup/install steps"
+- "security/auth flow changed, what docs need updates?"
+- "API contract changed, which docs should be updated?"
+- "review doc impact before closing this task"
+
+## Non-Activation Signals
+Common request patterns that should not activate this skill:
+- "format this file"
+- "fix typos only"
+- "rename variable/class only"
+- "internal refactor with no behavior change"
+- "comment cleanup only"
 
 ## Decision Flow
 Run this sequence after completing implementation:

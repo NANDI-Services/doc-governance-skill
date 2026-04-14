@@ -18,6 +18,7 @@ Use this checklist before publishing a new tag.
 - [ ] `install.sh` is idempotent and updates marker block safely.
 - [ ] `install.ps1` is idempotent and updates marker block safely.
 - [ ] `uninstall.sh` removes installed files and marker block safely.
+- [ ] `templates/AGENTS.append.md` was reviewed as a trusted-source boundary before release.
 
 ## Publication Readiness
 - [ ] `npx skills add NANDI-Services/doc-governance-skill --list` shows this skill.

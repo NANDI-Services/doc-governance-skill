@@ -38,6 +38,22 @@ Please do not publish proof-of-concept exploit details before a fix is available
 
 Coordinated disclosure helps reduce user risk.
 
+## Trust Boundaries and Installation Safety
+### Template Trust Boundary
+`templates/AGENTS.append.md` is inserted into local `AGENTS.md` during installation.
+
+Only install from trusted sources and review template changes before execution.
+
+### Installer Scope
+Installers are intended to:
+- copy skill files into repository-scoped install paths
+- manage a marker-delimited block in `AGENTS.md`
+
+Installers are not intended to:
+- execute arbitrary remote scripts
+- fetch external content
+- modify files outside repository-scoped targets
+
 ## Hardening Notes
 This repository is intentionally simple:
 - no runtime services are shipped

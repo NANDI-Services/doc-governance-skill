@@ -15,6 +15,7 @@ AGENTS_FILE="$REPO_ROOT/AGENTS.md"
 MARKER_START="<!-- ${SKILL_NAME}:start -->"
 MARKER_END="<!-- ${SKILL_NAME}:end -->"
 AGENTS_TEMPLATE="$SCRIPT_DIR/templates/AGENTS.append.md"
+SKILLS_BASE="$REPO_ROOT/.ai/skills"
 
 die() {
   echo "[${SKILL_NAME}] ERROR: $*" >&2
@@ -35,10 +36,28 @@ remove_existing_block() {
   mv "$tmp_file" "$file_path"
 }
 
+is_within_repo_root() {
+  local target="$1"
+  local resolved_repo
+  local resolved_target
+
+  resolved_repo="$(cd "$REPO_ROOT" && pwd -P)"
+  resolved_target="$(cd "$target" && pwd -P)"
+  [ "$resolved_target" = "$resolved_repo/.ai/skills" ]
+}
+
 [ -f "$AGENTS_TEMPLATE" ] || die "Missing template file: $AGENTS_TEMPLATE"
 grep -Fq "$MARKER_START" "$AGENTS_TEMPLATE" || die "Template missing start marker: $MARKER_START"
 grep -Fq "$MARKER_END" "$AGENTS_TEMPLATE" || die "Template missing end marker: $MARKER_END"
+if command -v sha256sum >/dev/null 2>&1; then
+  echo "[${SKILL_NAME}] AGENTS template SHA256: $(sha256sum "$AGENTS_TEMPLATE" | awk '{print $1}')"
+fi
 
+mkdir -p "$SKILLS_BASE" || die "Failed to create install base: $SKILLS_BASE"
+is_within_repo_root "$SKILLS_BASE" || die "Unsafe install base path detected (possible symlink escape): $SKILLS_BASE"
+[ ! -L "$AGENTS_FILE" ] || die "AGENTS.md is a symlink; refusing to modify: $AGENTS_FILE"
+
+rm -rf "$DEST_DIR" || die "Failed to reset destination: $DEST_DIR"
 mkdir -p "$DEST_DIR" || die "Failed to create destination: $DEST_DIR"
 cp "$SCRIPT_DIR/SKILL.md" "$DEST_DIR/SKILL.md" || die "Failed to copy SKILL.md"
 cp -R "$SCRIPT_DIR/templates" "$DEST_DIR/" || die "Failed to copy templates"

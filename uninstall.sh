@@ -38,6 +38,8 @@ fi
 
 if [ -f "$AGENTS_FILE" ] && grep -Fq "$MARKER_START" "$AGENTS_FILE"; then
   remove_existing_block "$AGENTS_FILE"
+elif [ -f "$AGENTS_FILE" ]; then
+  echo "[${SKILL_NAME}] Warning: markers not found in $AGENTS_FILE, block removal skipped."
 fi
 
 echo "Uninstalled $SKILL_NAME"

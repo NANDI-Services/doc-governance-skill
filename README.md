@@ -2,6 +2,22 @@
 
 Installable documentation-governance skill for the skills.sh ecosystem.
 
+## Quick Start
+1. Install the skill from GitHub:
+```bash
+npx skills add NANDI-Services/doc-governance-skill
+```
+2. Run it after a meaningful repository change.
+3. Apply only the document updates routed by the skill.
+4. End with the required minimal output block.
+
+Example output shape:
+```text
+Action Taken: Multiple
+Justification: API auth flow and deployment workflow changed.
+Persisted Rule: Updated security and operations doc routing guidance.
+```
+
 ## What Problem This Solves
 Teams often over-update or under-update docs after implementation work. This skill gives agents a deterministic review flow to decide:
 - whether docs must change
@@ -9,6 +25,13 @@ Teams often over-update or under-update docs after implementation work. This ski
 - what minimal completion report should be emitted
 
 The goal is accurate documentation with minimal churn.
+
+## Why This Skill
+Manual doc review is inconsistent and often noisy. This skill gives a deterministic routing flow that:
+- standardizes what counts as a meaningful change
+- maps impact to the correct document(s)
+- avoids over-updating unrelated files
+- improves review quality with a minimal, repeatable completion format
 
 ## Agent / IDE Compatibility
 This repository is designed for skill discovery through skills.sh-compatible tooling.
@@ -69,6 +92,23 @@ Justification: CI workflow and deployment commands changed, requiring README and
 Persisted Rule: Updated CI/CD and operations documentation routing rules.
 ```
 
+## Real Scenario
+Change implemented:
+- Added new authentication checks to API middleware
+- Updated CI pipeline to run an additional security stage
+
+Expected document routing:
+- `README.md` for setup and operator-facing command changes
+- `SECURITY.md` for security posture and disclosure-relevant changes
+- `CONTRIBUTING.md` if contributor workflow or checks changed
+
+Expected completion block:
+```text
+Action Taken: Multiple
+Justification: Authentication behavior and CI security workflow changed.
+Persisted Rule: Updated security and contributor-process routing guidance.
+```
+
 ## Documents Evaluated By This Skill
 - `README.md`
 - `AGENTS.md`
@@ -97,6 +137,8 @@ Do not update docs for behavior-neutral edits:
 - The optional pre-commit hook is non-blocking and warning-only.
 - This repository intentionally avoids opaque automation and external runtime dependencies.
 - For public repositories, security and policy reporting contact is `contact@nandi.com.ar`.
+- Trust boundary: `templates/AGENTS.append.md` is inserted into local `AGENTS.md`; install only from trusted sources and review template content before running installers.
+- This skill does not fetch remote content, execute arbitrary commands, or modify files outside repository-scoped install targets.
 
 ## Uninstall and Maintenance
 Uninstall local installation:

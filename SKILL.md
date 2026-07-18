@@ -74,9 +74,10 @@ Update docs when at least one is true:
 Use only the files that match the actual impact:
 - `README.md`: setup, usage, safe defaults, common operational commands
 - `AGENTS.md`: agent workflow rules and repository automation guidance
+- `CLAUDE.md`: Claude-agent-specific instructions and repository conventions (pairs with or replaces `AGENTS.md` in Claude-native repos)
 - `CONTRIBUTING.md`: contributor workflow, lint/test expectations, PR standards
 - `SECURITY.md`: disclosure process, support policy, hardening-relevant maintainer guidance
-- `CHANGELOG.md`: user-visible or operator-visible release-facing changes
+- `CHANGELOG.md`: user-visible or operator-visible release-facing changes. Follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) buckets (Added / Changed / Fixed / Removed / Security). Fixes pending release go under `[Unreleased]`; dated sections are cut on release.
 - `ARCHITECTURE.md`: system boundaries, component responsibilities, trust/data flow
 - `OPERATIONS.md`: deployment, maintenance, backup, rollback, incident handling
 - `TROUBLESHOOTING.md`: recurring failures, diagnostics, safe remediation
@@ -86,9 +87,15 @@ Use only the files that match the actual impact:
 ## Minimal Output Format
 At completion, emit exactly this block:
 
-Action Taken: [README.md | AGENTS.md | CONTRIBUTING.md | SECURITY.md | CHANGELOG.md | ARCHITECTURE.md | OPERATIONS.md | TROUBLESHOOTING.md | API.md | docs/** | Multiple | None]
+Action Taken: [README.md | AGENTS.md | CLAUDE.md | CONTRIBUTING.md | SECURITY.md | CHANGELOG.md | ARCHITECTURE.md | OPERATIONS.md | TROUBLESHOOTING.md | API.md | docs/** | Multiple | None]
 Justification: [one clear sentence]
-Persisted Rule: [rule applied or "None"]
+Persisted Rule: [rule to append to CLAUDE.md or AGENTS.md if the change reveals a routing or update policy worth carrying forward; else "None"]
+
+`Persisted Rule` defaults to `None`. Emit a non-None value only when the change reveals a durable policy — e.g. "New CI jobs always update OPERATIONS.md rollback section". The agent applies it by editing `CLAUDE.md` or `AGENTS.md` in the same task.
+
+### When to emit which format
+- **Agent-driven decision flow (manual routing)**: emit the `Action Taken` / `Justification` / `Persisted Rule` block above.
+- **Update Mode tool (`bin/update.js`)**: emits the `DOC_GOVERNANCE_UPDATE:` / `SUMMARY:` block automatically. The agent still emits the manual block after acting on the tool's findings.
 
 ## Style Constraints
 - Keep output concise and specific.
@@ -103,6 +110,8 @@ Command:
 ```bash
 node .ai/skills/doc-governance-skill/bin/audit.js
 ```
+
+Path note: the command assumes the skill installed at `.ai/skills/doc-governance-skill/` (per-repo default from `install.sh`). Adjust to `~/.claude/skills/doc-governance-skill/bin/…` for a global install, or wherever the skill lives in your setup.
 
 Behavior:
 - Scans every `*.md` in the repo (skipping `.git`, `node_modules`, `dist`, `build`, `.next`, `target`, `vendor`, `.venv`, `venv`, `.doc-governance`, `.ai`).
@@ -120,12 +129,15 @@ Command:
 node .ai/skills/doc-governance-skill/bin/update.js
 ```
 
+Path note: same as Audit Mode — adjust the path to your install location.
+
 Optional overrides:
 - `--since <ref>` — diff against a specific git ref instead of the sealed SHA.
 - `--files a,b,c` — explicit file list, skip git diff entirely.
 - stdin — accepts one path per line (e.g. `git diff --name-only | node .../update.js`).
 
 Behavior:
+- If `.doc-governance/map.md` is missing, auto-creates it by scanning the repo and sealing to current `git HEAD` (see `## First Run / No Baseline` below).
 - Reads `.doc-governance/map.md`, extracts the sealed SHA.
 - Runs `git diff --name-only <sealed_sha>` (working-tree comparison → catches committed + uncommitted).
 - Cross-references changed paths against `code_refs` in the map.
@@ -133,6 +145,14 @@ Behavior:
 - Exit 0 clean or Info-only, 1 with any Warning or Critical finding.
 
 For each `- doc: <path>` in the emitted Warning list, use the routing table in `## Document Routing By Type` above to decide whether that doc is the right target — the audit tool detects references, not intent.
+
+## First Run / No Baseline
+On the first invocation in a repo without `.doc-governance/map.md`:
+- Update Mode auto-creates the map sealed to current `git HEAD` and emits an `Info: baseline_auto_sealed` entry.
+- Exit 0 is expected — nothing has changed against a baseline sealed a moment ago.
+- Commit `.doc-governance/map.md`. Subsequent runs diff against that SHA.
+
+To seal a baseline explicitly (larger repos, CI-driven bootstrap), run `audit.js` first — behavior is identical.
 
 ## Drift Categories Monitored
 | Severity | Trigger | Suggested Action |

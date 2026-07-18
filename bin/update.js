@@ -4,6 +4,10 @@
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { scanRepo, renderMap } = require('./lib/scan');
+
+// ponytail: bootstrapped map is tagged so audit re-seals get a clean provenance.
+const BOOTSTRAP_TOOL_VERSION = 'update-bootstrap';
 
 function findRepoRoot() {
   try {
@@ -115,7 +119,7 @@ function classifyChanged(changedFiles) {
   return { code, md };
 }
 
-function renderReport({ map, args, changedFiles, mdChanged, affected }) {
+function renderReport({ map, args, changedFiles, mdChanged, affected, autoBootstrapped }) {
   const range = args.files
     ? '(--files)'
     : args.since
@@ -124,7 +128,7 @@ function renderReport({ map, args, changedFiles, mdChanged, affected }) {
 
   const critical = 0;
   const warnings = affected.length;
-  const info = mdChanged.length > 0 ? 1 : 0;
+  const info = (mdChanged.length > 0 ? 1 : 0) + (autoBootstrapped ? 1 : 0);
 
   const lines = [];
   lines.push('DOC_GOVERNANCE_UPDATE:');
@@ -145,7 +149,11 @@ function renderReport({ map, args, changedFiles, mdChanged, affected }) {
   }
   lines.push('');
   lines.push(`INFO (${info}):`);
-  if (info) {
+  if (autoBootstrapped) {
+    lines.push(`  - baseline_auto_sealed: first run, sealed to ${map.sealedSha || '(no-git)'}`);
+    lines.push(`    suggested_action: commit .doc-governance/map.md to persist the baseline`);
+  }
+  if (mdChanged.length > 0) {
     lines.push(`  - map_staleness: ${mdChanged.length} .md file(s) changed since sealed_sha, map may not reflect current structure`);
     lines.push(`    suggested_action: run audit to re-seal`);
   }
@@ -154,12 +162,31 @@ function renderReport({ map, args, changedFiles, mdChanged, affected }) {
   return lines.join('\n');
 }
 
+function bootstrapMap(root, mapPath) {
+  const docs = scanRepo(root);
+  let sealedSha = null;
+  try {
+    sealedSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+  } catch {
+    sealedSha = null;
+  }
+  const content = renderMap({
+    sealedSha,
+    sealedAt: new Date().toISOString(),
+    docs,
+    toolVersion: BOOTSTRAP_TOOL_VERSION,
+  });
+  fs.mkdirSync(path.dirname(mapPath), { recursive: true });
+  fs.writeFileSync(mapPath, content);
+}
+
 function main() {
   const root = findRepoRoot();
   const mapPath = path.join(root, '.doc-governance', 'map.md');
+  let autoBootstrapped = false;
   if (!fs.existsSync(mapPath)) {
-    console.error('[doc-governance-update] map not found at .doc-governance/map.md. Run audit first.');
-    process.exit(1);
+    bootstrapMap(root, mapPath);
+    autoBootstrapped = true;
   }
   const args = parseArgs(process.argv.slice(2));
   const map = parseMap(fs.readFileSync(mapPath, 'utf8'));
@@ -173,7 +200,7 @@ function main() {
     if (matches.length) affected.push({ doc: doc.path, refs: matches });
   }
 
-  const report = renderReport({ map, args, changedFiles, mdChanged, affected });
+  const report = renderReport({ map, args, changedFiles, mdChanged, affected, autoBootstrapped });
   console.log(report);
 
   process.exit(affected.length > 0 ? 1 : 0);

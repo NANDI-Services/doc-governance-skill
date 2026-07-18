@@ -83,4 +83,38 @@ function scanRepo(root) {
   return docs;
 }
 
-module.exports = { scanRepo };
+function renderMap({ sealedSha, sealedAt, docs, toolVersion }) {
+  const lines = [
+    '<!-- doc-governance:map v1 -->',
+    `sealed_sha: ${sealedSha || '(none)'}`,
+    `sealed_at: ${sealedAt}`,
+    `tool_version: ${toolVersion}`,
+    '',
+    '## Inventory',
+    '',
+  ];
+  for (const doc of docs) {
+    lines.push(`### ${doc.path}`);
+    lines.push(`title: ${doc.title || '(untitled)'}`);
+    if (doc.headings.length) {
+      lines.push('headings:');
+      for (const h of doc.headings) {
+        lines.push(`  - H${h.level}: ${h.text}`);
+      }
+    } else {
+      lines.push('headings: []');
+    }
+    if (doc.codeRefs.length) {
+      lines.push('code_refs:');
+      for (const ref of doc.codeRefs) {
+        lines.push(`  - ${ref}`);
+      }
+    } else {
+      lines.push('code_refs: []');
+    }
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
+module.exports = { scanRepo, renderMap };

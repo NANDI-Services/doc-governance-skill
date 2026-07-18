@@ -27,6 +27,12 @@ Use this checklist before publishing a new tag.
 - [ ] `node bin/update.js` after touching a code path referenced by any doc reports at least one Warning and exits 1.
 - [ ] `install.sh` and `install.ps1` copy `bin/` alongside `SKILL.md` and `templates/`; installed `audit.js` runs from `.ai/skills/doc-governance-skill/bin/`.
 
+## Auto-Bootstrap Smoke (v0.3+)
+In a temporary repo without `.doc-governance/map.md`:
+- [ ] `mkdir /tmp/dg-smoke && cd /tmp/dg-smoke && git init -q && echo '# X' > README.md && git add . && git commit -qm init`
+- [ ] `node /path/to/doc-governance-skill/bin/update.js` creates `.doc-governance/map.md`, exits 0, and prints `baseline_auto_sealed`.
+- [ ] Second `node .../bin/update.js` (no changes) exits 0 with `SUMMARY: 0 critical, 0 warnings, 0 info`.
+
 ## Publication Readiness
 - [ ] `npx skills add NANDI-Services/doc-governance-skill --list` shows this skill.
 - [ ] License file is present and correct.

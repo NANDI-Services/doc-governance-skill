@@ -130,7 +130,11 @@ git add .doc-governance/map.md && git commit -m "Seal doc-governance baseline"
 node .ai/skills/doc-governance-skill/bin/update.js
 ```
 
+On the first run without `.doc-governance/map.md`, Update auto-creates the baseline sealed to current `git HEAD` and emits an `Info: baseline_auto_sealed` entry — commit the map to persist it. Subsequent runs diff against that SHA.
+
 Update accepts optional overrides: `--since <ref>` (diff against a different git ref), `--files a,b,c` (skip git diff, use an explicit file list), or stdin (`git diff --name-only | update.js`).
+
+Path note: both commands assume the skill installed at `.ai/skills/doc-governance-skill/` (per-repo default). Adjust to `~/.claude/skills/doc-governance-skill/bin/…` for a global install.
 
 Example output when one changed code file is referenced by a doc:
 ```text
@@ -178,6 +182,7 @@ Persisted Rule: Updated security and contributor-process routing guidance.
 ## Documents Evaluated By This Skill
 - `README.md`
 - `AGENTS.md`
+- `CLAUDE.md`
 - `CONTRIBUTING.md`
 - `SECURITY.md`
 - `CHANGELOG.md`

@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.2.1] - 2026-07-18
+
+- fix: add missing skills.sh badge to README
+
 ## [0.2.0] - 2026-07-18
 
 - fix: update release workflow to use RELEASE_TOKEN instead of GITHUB_TOKEN

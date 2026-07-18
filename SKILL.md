@@ -1,7 +1,7 @@
 ---
 name: doc-governance-skill
 description: Decide doc-impact after meaningful code, config, CI/CD, security, architecture, API, or workflow changes, route updates to the right files, and avoid activation for cosmetic-only or behavior-neutral edits.
-version: 0.3.1
+version: 0.4.0
 ---
 
 # Repo Doc Governance
@@ -156,14 +156,14 @@ To seal a baseline explicitly (larger repos, CI-driven bootstrap), run `audit.js
 
 ## Root Invocation Behavior (`/doc-governance-skill`)
 
-Este repo se distribuye simultáneamente como **skill** (`SKILL.md`, vía skills.sh) y como **plugin** de Claude Code (`.claude-plugin/plugin.json` + `commands/`). El comportamiento del slash root es idéntico en ambos casos.
+Este repo se instala con un solo comando (`claude plugin install NANDI-Services/doc-governance-skill`), que registra plugin y skill a la vez desde el mismo árbol. También existe una ruta fallback vía skills.sh (`npx skills add ...`) que registra solo el skill.
 
 **Cómo se ve en el menú según cómo esté instalada:**
-- **Instalada como plugin** → aparecen 2 slashes literales:
-  - `/doc-governance-skill` (root command, este flujo) — viene de `commands/doc-governance-skill.md`.
+- **Vía `claude plugin install` (recomendado)** → aparecen 2 slashes literales:
+  - `/doc-governance-skill` (root, este flujo) — el plugin loader auto-registra el `SKILL.md` de la raíz como single-skill del plugin (docs oficiales: sin `skills/` dir y sin campo `skills` en el manifest, el root SKILL.md se carga automáticamente).
   - `/doc-governance-skill:update` (chequeo de drift directo) — viene de `commands/update.md`.
-- **Instalada como skill (vía skills.sh)** → aparece 1 slash literal:
-  - `/doc-governance-skill` — este mismo flujo, autogenerado del `name:` del frontmatter.
+- **Vía `npx skills add` (fallback skills.sh)** → aparece 1 slash literal:
+  - `/doc-governance-skill` — el mismo flujo, autogenerado del `name:` del frontmatter.
   - El sub-modo update se activa por intent en la conversación ("corré modo update", "chequeá drift"). El agente lee `commands/update.md` como spec formal.
 
 **Flujo del root (idéntico en skill y plugin):**

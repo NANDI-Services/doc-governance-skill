@@ -7,10 +7,11 @@ Installable documentation-governance skill for the skills.sh ecosystem.
 Canonical skill ID: `doc-governance-skill`.
 
 ## Quick Start
-1. Install the skill from GitHub:
+1. Install with one command:
 ```bash
-npx skills add NANDI-Services/doc-governance-skill
+claude plugin install NANDI-Services/doc-governance-skill
 ```
+   Registers both the plugin (`/doc-governance-skill`, `/doc-governance-skill:update`) and the skill in a single step.
 2. Run it after a meaningful repository change.
 3. Apply only the document updates routed by the skill.
 4. End with the required minimal output block.
@@ -45,17 +46,16 @@ Manual doc review is inconsistent and often noisy. This skill gives a determinis
 - improves review quality with a minimal, repeatable completion format
 
 ## Agent / IDE Compatibility
-This repository is designed for skill discovery through skills.sh-compatible tooling.
+This repository is designed to be installed as a Claude Code plugin (which auto-registers the bundled skill) and consumed by any agent environment that reads a root-level `SKILL.md` with YAML frontmatter.
 
 Primary target:
-- `npx skills add ...` workflows
+- Claude Code `claude plugin install ...`
 
-Also useful in any agent environment that can consume a root-level `SKILL.md` with YAML frontmatter.
+Also discoverable via skills.sh (`npx skills add ...`) as a skill-only install — see the Installation section for the trade-off.
 
 ## Repository Structure
-- `SKILL.md`: skill metadata and governance logic (skills.sh manifest)
+- `SKILL.md`: skill metadata and governance logic (skills.sh manifest; also auto-registered as the plugin's root skill `/doc-governance-skill`)
 - `.claude-plugin/plugin.json`: Claude Code plugin manifest (v0.4+)
-- `commands/doc-governance-skill.md`: root slash-command spec (`/doc-governance-skill`)
 - `commands/update.md`: update slash-command spec (`/doc-governance-skill:update`)
 - `bin/audit.js`, `bin/update.js`, `bin/lib/scan.js`: zero-dependency Node runtime (audit + update modes)
 - `SECURITY.md`: security disclosure process and hardening policy
@@ -71,29 +71,21 @@ Also useful in any agent environment that can consume a root-level `SKILL.md` wi
 
 ## Installation
 
-### From skills.sh (Recommended)
+### One canonical command
 
-**Install directly:**
 ```bash
-npx skills add NANDI-Services/doc-governance-skill
+claude plugin install NANDI-Services/doc-governance-skill
 ```
 
-**Or list skills in this repository first:**
-```bash
-npx skills add NANDI-Services/doc-governance-skill --list
-```
+That's it. One install registers **both** the plugin and the skill:
 
-**Search for the skill on skills.sh CLI:**
-```bash
-npx skills find doc-governance-skill
-```
+- **Plugin** → the `/doc-governance-skill:update` sub-slash appears literally in the palette.
+- **Skill** → the root `SKILL.md` is auto-loaded as `/doc-governance-skill` (see [Claude Code plugin docs](https://code.claude.com/docs/en/plugins-reference#skills): a plugin whose root is a `SKILL.md` becomes a single-skill plugin automatically — no `skills` field in `plugin.json` needed). The agent also activates it by intent (audit, drift check, etc.).
 
-**Browse on web search (skills.sh):**
-- Visit: https://skills.sh/
-- Search for: `doc-governance-skill` or `NANDI-Services`
-- Note: web search visibility depends on leaderboard indexing/telemetry, while direct CLI install works immediately.
+### Team bundling (optional)
 
-### Local Installation (Script-Based)
+For teams that want the skill to travel **inside a specific repo** (patches the repo's `AGENTS.md` with a marker-delimited block, copies runtime into `<repo>/.ai/skills/doc-governance-skill/`), use the local installer:
+
 Linux/macOS:
 ```bash
 chmod +x install.sh uninstall.sh
@@ -106,10 +98,17 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\install.ps1
 ```
 
-### Local Installation (CLI Path)
+This is **not** an alternative to the user-level install above — it's a separate scenario (bundling for your team's repo).
+
+### skills.sh (fallback)
+
+skills.sh also lists this project and its install-count badge is fed by that telemetry. The direct command still works:
+
 ```bash
-npx skills add /absolute/path/to/doc-governance-skill
+npx skills add NANDI-Services/doc-governance-skill
 ```
+
+Trade-off: this path registers **only** the skill (no `/doc-governance-skill:update` literal slash). The update sub-mode still activates by intent. Prefer `claude plugin install` unless you specifically want a skills.sh-only install.
 
 ## Usage Example
 After implementing a meaningful repository change, run the skill and follow its output format:
@@ -168,23 +167,10 @@ Commit `.doc-governance/map.md` — it is the shared baseline for the update mod
 
 ## Slash-Commands
 
-Este repo se distribuye como **skill** (`SKILL.md`) y como **plugin** de Claude Code (`.claude-plugin/plugin.json` + `commands/`) desde el mismo árbol. Instalada como plugin, aparecen **dos slashes literales** en el menú:
+Con `claude plugin install NANDI-Services/doc-governance-skill` quedan dos slashes literales en el menú:
 
-- **`/doc-governance-skill`** — Revisar cambios, decidir qué docs actualizar, y al final ofrece sellar un baseline nuevo (te pregunta antes de tocar nada). Empoderá al user, no lo reemplaza.
-- **`/doc-governance-skill:update`** — Chequeo directo de drift: qué docs mencionan código que cambió desde el último baseline. Solo reporta, no edita.
-
-**Instalación como plugin** (para tener los 2 slashes literales):
-```bash
-# copiá el repo (o su release publicado) a la carpeta de plugins de Claude Code
-claude plugin install /ruta/al/repo/doc-governance-skill
-# o vía marketplace si está publicado
-```
-
-**Instalación como skill** (default vía skills.sh — 1 slash literal + sub-modos por intent):
-```bash
-npx skills add NANDI-Services/doc-governance-skill
-```
-En modo skill, `/doc-governance-skill` es el único slash literal; el sub-modo update se activa por conversación ("corré modo update", "chequeá drift").
+- **`/doc-governance-skill`** — Revisar cambios, decidir qué docs actualizar, y al final ofrece sellar un baseline nuevo (te pregunta antes de tocar nada). Empoderá al user, no lo reemplaza. Viene del `SKILL.md` de la raíz, auto-registrado por el plugin loader.
+- **`/doc-governance-skill:update`** — Chequeo directo de drift: qué docs mencionan código que cambió desde el último baseline. Solo reporta, no edita. Viene de `commands/update.md`.
 
 **Automatización sin agente:** los scripts `bin/audit.js` y `bin/update.js` siguen siendo callable directo desde terminal, CI o git hooks — sin pasar por el agente ni por el slash.
 
@@ -263,6 +249,13 @@ grep -n '^description:' SKILL.md
 
 ### 2. Validate Discovery From GitHub
 ```bash
+# Plugin path (canonical)
+claude plugin install NANDI-Services/doc-governance-skill --dry-run 2>/dev/null || \
+  echo "Fallback: verify manifest is valid JSON" && \
+  node -e "JSON.parse(require('fs').readFileSync('.claude-plugin/plugin.json','utf8'))" && \
+  echo OK
+
+# skills.sh path (fallback)
 npx skills add NANDI-Services/doc-governance-skill --list
 ```
 
@@ -285,8 +278,9 @@ grep -n 'repo-doc-governance:end' AGENTS.md
 ## Publishing Readiness
 Current repo is publication-oriented when these conditions pass:
 - root `SKILL.md` includes valid YAML frontmatter (`name`, `description`)
-- `npx skills add ... --list` discovers the skill
-- install/uninstall scripts are idempotent
+- `.claude-plugin/plugin.json` is valid JSON with a `name` field
+- `claude plugin install` picks up the plugin and auto-registers the root skill
+- `install.sh` / `install.ps1` (team-bundling path) remain idempotent
 - security and contribution policies are present (`SECURITY.md`, `CONTRIBUTING.md`)
 - license and release checklist are present
 
@@ -298,3 +292,4 @@ This repository is released under the MIT License. See `LICENSE`.
 ## Lessons Learned
 
 - [2026-07-18] Skills.sh listing is telemetry-driven; only `npx skills add` triggers indexing.
+- [2026-07-18] A Claude Code plugin whose root is a `SKILL.md` (with no `skills/` dir and no `skills` manifest field) is auto-loaded as a single-skill plugin. Result: `claude plugin install` is a single command that registers both the plugin's literal sub-slashes (from `commands/*.md`) and the skill (from root `SKILL.md`). No duplicate root command file required.

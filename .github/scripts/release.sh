@@ -52,19 +52,30 @@ sed -i "s/^version: .*/version: $NEW_VERSION/" SKILL.md
 sed -i "s/const TOOL_VERSION = '[^']*';/const TOOL_VERSION = '$NEW_VERSION';/" bin/audit.js
 
 ENTRY_BODY=$(echo "$COMMITS" | sed 's/^/- /')
-{
-  echo "# Changelog"
-  echo ""
-  echo "## [$NEW_VERSION] - $TODAY"
-  echo ""
-  echo "$ENTRY_BODY"
-  tail -n +2 CHANGELOG.md
-} > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
+
+# Idempotent: if CHANGELOG already has this version (manual bump upstream),
+# skip the prepend. sed on SKILL.md and bin/audit.js is already idempotent.
+if grep -q "^## \[$NEW_VERSION\]" CHANGELOG.md; then
+  echo "CHANGELOG already has [$NEW_VERSION] entry. Skipping prepend."
+else
+  {
+    echo "# Changelog"
+    echo ""
+    echo "## [$NEW_VERSION] - $TODAY"
+    echo ""
+    echo "$ENTRY_BODY"
+    tail -n +2 CHANGELOG.md
+  } > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
+fi
 
 git add SKILL.md bin/audit.js CHANGELOG.md
-git commit -m "chore(release): $NEW_TAG [skip ci]"
+if git diff --cached --quiet; then
+  echo "Version files and CHANGELOG already at $NEW_VERSION. Tagging existing HEAD."
+else
+  git commit -m "chore(release): $NEW_TAG [skip ci]"
+  git push origin HEAD:main
+fi
 git tag -a "$NEW_TAG" -m "Release $NEW_VERSION"
-git push origin HEAD:main
 git push origin "$NEW_TAG"
 
 gh release create "$NEW_TAG" \

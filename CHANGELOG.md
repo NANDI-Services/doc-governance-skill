@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0] - 2026-07-18
+
+### Changed
+- Installation unified into a single canonical command: `claude plugin install NANDI-Services/doc-governance-skill`. Registers both plugin (literal `/doc-governance-skill:update` sub-slash) and skill (`/doc-governance-skill` auto-registered from root `SKILL.md`).
+- `README.md` Installation section rewritten around the single command. `npx skills add` documented as fallback. `install.sh`/`install.ps1` relabeled as "Team bundling (optional)".
+- `CLAUDE.md` Dual Distribution reflects the auto-register mechanism (Claude Code v2.1.142+): a plugin with `SKILL.md` at root, no `skills/` dir, and no `skills` manifest field is auto-loaded as a single-skill plugin.
+- `SKILL.md` Root Invocation Behavior updated to describe the new install topology.
+- `.github/scripts/release.sh` made CHANGELOG-idempotent: skips prepend when the version entry already exists (allows manual bumps without duplicate entries), and skips the release commit when nothing is staged.
+
+### Removed
+- `commands/doc-governance-skill.md` — content was duplicated with `SKILL.md`'s `## Root Invocation Behavior` section and it collided with the plugin auto-register of the root `SKILL.md`. The root slash is now sourced from `SKILL.md` alone.
+
 ## [0.3.1] - 2026-07-18
 
 - Merge branch 'main' of https://github.com/NANDI-Services/doc-governance-skill

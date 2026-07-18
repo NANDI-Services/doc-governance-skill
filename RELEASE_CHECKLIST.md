@@ -36,11 +36,13 @@ In a temporary repo without `.doc-governance/map.md`:
 ## Plugin Manifest (v0.4+)
 - [ ] `.claude-plugin/plugin.json` parses as valid JSON: `node -e "JSON.parse(require('fs').readFileSync('.claude-plugin/plugin.json','utf8'))"`.
 - [ ] `.claude-plugin/plugin.json` `name` matches `SKILL.md` `name:` (both `doc-governance-skill`).
-- [ ] `commands/doc-governance-skill.md` exists and is the root slash spec (behavior mirrors `SKILL.md` root invocation flow).
+- [ ] `claude plugin validate .` passes (only acceptable warning: missing `version` field).
+- [ ] There is no `skills/` directory and no `skills` field in `plugin.json` — root `SKILL.md` must remain the auto-registered single skill. Do NOT re-add `commands/doc-governance-skill.md` (it would collide with the auto-register).
 - [ ] `commands/update.md` exists and describes the drift-check flow (runs `bin/update.js`).
 - [ ] `install.sh` and `install.ps1` copy `commands/` and `.claude-plugin/` guarded (`[ -d ]` / `Test-Path`).
 
 ## Publication Readiness
-- [ ] `npx skills add NANDI-Services/doc-governance-skill --list` shows this skill.
+- [ ] `claude plugin validate .` reports no errors (canonical install path).
+- [ ] `npx skills add NANDI-Services/doc-governance-skill --list` shows this skill (fallback skills.sh path).
 - [ ] License file is present and correct.
 - [ ] Tag and release notes prepared.

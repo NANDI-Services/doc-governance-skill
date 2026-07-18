@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.2.3] - 2026-07-18
+
+- docs: add CLAUDE.md for guidance on repository usage and conventions
+
 ## [0.2.2] - 2026-07-18
 
 - docs: add 'Lessons Learned' section to README

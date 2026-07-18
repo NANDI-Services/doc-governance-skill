@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.0] - 2026-07-18
+
+- chore: re-seal doc-governance baseline
+- feat: auto-bootstrap baseline in update mode + doc-governance fixes [minor]
+
 ## [0.2.3] - 2026-07-18
 
 - docs: add CLAUDE.md for guidance on repository usage and conventions

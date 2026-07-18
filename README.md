@@ -1,5 +1,7 @@
 # repo-doc-governance
 
+[![skills.sh](https://skills.sh/b/NANDI-Services/doc-governance-skill)](https://skills.sh/NANDI-Services/doc-governance-skill)
+
 Installable documentation-governance skill for the skills.sh ecosystem.
 
 Canonical skill ID: `doc-governance-skill`.

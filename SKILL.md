@@ -154,6 +154,48 @@ On the first invocation in a repo without `.doc-governance/map.md`:
 
 To seal a baseline explicitly (larger repos, CI-driven bootstrap), run `audit.js` first — behavior is identical.
 
+## Root Invocation Behavior (`/doc-governance-skill`)
+
+Este repo se distribuye simultáneamente como **skill** (`SKILL.md`, vía skills.sh) y como **plugin** de Claude Code (`.claude-plugin/plugin.json` + `commands/`). El comportamiento del slash root es idéntico en ambos casos.
+
+**Cómo se ve en el menú según cómo esté instalada:**
+- **Instalada como plugin** → aparecen 2 slashes literales:
+  - `/doc-governance-skill` (root command, este flujo) — viene de `commands/doc-governance-skill.md`.
+  - `/doc-governance-skill:update` (chequeo de drift directo) — viene de `commands/update.md`.
+- **Instalada como skill (vía skills.sh)** → aparece 1 slash literal:
+  - `/doc-governance-skill` — este mismo flujo, autogenerado del `name:` del frontmatter.
+  - El sub-modo update se activa por intent en la conversación ("corré modo update", "chequeá drift"). El agente lee `commands/update.md` como spec formal.
+
+**Flujo del root (idéntico en skill y plugin):**
+
+1. **Corré el flujo manual completo**: inspeccionar cambios, decidir routing usando `## Document Routing By Type`, editar los docs impactados, emitir el bloque `Action Taken` / `Justification` / `Persisted Rule`.
+
+2. **Ofrecé sellar un baseline nuevo al final**, con un mensaje explicativo en lenguaje NO técnico:
+
+   ```
+   ¿Querés que saque una "foto nueva" del estado actual de tu documentación?
+
+   Qué significa esto:
+   - Escaneo cada archivo .md del repo
+   - Anoto qué archivos de código menciona cada uno
+   - Guardo esa lista como referencia
+
+   Para qué sirve: la próxima vez que corras el chequeo de drift
+   (`/doc-governance-skill:update`), se compara contra esta foto. Si un
+   doc menciona código que cambió desde entonces, te lo marca.
+
+   Foto actual: sellada el <fecha> contra el commit <SHA-corto> (o "no hay foto aún")
+   Foto nueva: se sellaría contra tu commit actual <SHA-corto>
+
+   ¿Saco la foto nueva? (sí / no)
+   ```
+
+3. **Si el user confirma**, correr `node .ai/skills/doc-governance-skill/bin/audit.js` y avisar de commitear `.doc-governance/map.md`.
+
+4. **Si el user rechaza**, cerrar sin acción — dejar el baseline como estaba.
+
+Regla de oro: la skill empodera al user, no lo reemplaza. Nunca correr audit sin confirmación explícita en esta ruta.
+
 ## Drift Categories Monitored
 | Severity | Trigger | Suggested Action |
 |---|---|---|

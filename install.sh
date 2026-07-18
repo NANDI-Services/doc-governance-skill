@@ -63,6 +63,8 @@ mkdir -p "$DEST_DIR" || die "Failed to create destination: $DEST_DIR"
 cp "$SCRIPT_DIR/SKILL.md" "$DEST_DIR/SKILL.md" || die "Failed to copy SKILL.md"
 cp -R "$SCRIPT_DIR/templates" "$DEST_DIR/" || die "Failed to copy templates"
 cp -R "$SCRIPT_DIR/bin" "$DEST_DIR/" || die "Failed to copy bin"
+[ -d "$SCRIPT_DIR/commands" ] && cp -R "$SCRIPT_DIR/commands" "$DEST_DIR/"
+[ -d "$SCRIPT_DIR/.claude-plugin" ] && cp -R "$SCRIPT_DIR/.claude-plugin" "$DEST_DIR/"
 
 if [ ! -f "$AGENTS_FILE" ]; then
   cat > "$AGENTS_FILE" <<'AGENTS' || die "Failed to create AGENTS.md"

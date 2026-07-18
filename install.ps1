@@ -60,6 +60,10 @@ New-Item -ItemType Directory -Force -Path $DestDir | Out-Null
 Copy-Item -Force (Join-Path $ScriptDir 'SKILL.md') $DestDir
 Copy-Item -Recurse -Force (Join-Path $ScriptDir 'templates') $DestDir
 Copy-Item -Recurse -Force (Join-Path $ScriptDir 'bin') $DestDir
+$CommandsSrc = Join-Path $ScriptDir 'commands'
+if (Test-Path $CommandsSrc) { Copy-Item -Recurse -Force $CommandsSrc $DestDir }
+$PluginManifestSrc = Join-Path $ScriptDir '.claude-plugin'
+if (Test-Path $PluginManifestSrc) { Copy-Item -Recurse -Force $PluginManifestSrc $DestDir }
 
 if (-not (Test-Path $AgentsFile)) {
     Set-Content -Path $AgentsFile -Value "# AGENTS.md`r`n" -Encoding utf8

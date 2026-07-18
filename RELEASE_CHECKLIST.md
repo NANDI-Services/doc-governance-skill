@@ -33,6 +33,13 @@ In a temporary repo without `.doc-governance/map.md`:
 - [ ] `node /path/to/doc-governance-skill/bin/update.js` creates `.doc-governance/map.md`, exits 0, and prints `baseline_auto_sealed`.
 - [ ] Second `node .../bin/update.js` (no changes) exits 0 with `SUMMARY: 0 critical, 0 warnings, 0 info`.
 
+## Plugin Manifest (v0.4+)
+- [ ] `.claude-plugin/plugin.json` parses as valid JSON: `node -e "JSON.parse(require('fs').readFileSync('.claude-plugin/plugin.json','utf8'))"`.
+- [ ] `.claude-plugin/plugin.json` `name` matches `SKILL.md` `name:` (both `doc-governance-skill`).
+- [ ] `commands/doc-governance-skill.md` exists and is the root slash spec (behavior mirrors `SKILL.md` root invocation flow).
+- [ ] `commands/update.md` exists and describes the drift-check flow (runs `bin/update.js`).
+- [ ] `install.sh` and `install.ps1` copy `commands/` and `.claude-plugin/` guarded (`[ -d ]` / `Test-Path`).
+
 ## Publication Readiness
 - [ ] `npx skills add NANDI-Services/doc-governance-skill --list` shows this skill.
 - [ ] License file is present and correct.

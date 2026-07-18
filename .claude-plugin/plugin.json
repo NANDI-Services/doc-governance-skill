@@ -1,0 +1,8 @@
+{
+  "name": "doc-governance-skill",
+  "description": "Decidir impacto en documentación después de cambios en código, config, CI/CD, seguridad, arquitectura, API o workflow. Rutea updates al doc correcto; ignora cambios cosméticos.",
+  "author": {
+    "name": "NANDI Services",
+    "email": "contact@nandi.com.ar"
+  }
+}

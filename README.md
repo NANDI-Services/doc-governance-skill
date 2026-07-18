@@ -53,7 +53,11 @@ Primary target:
 Also useful in any agent environment that can consume a root-level `SKILL.md` with YAML frontmatter.
 
 ## Repository Structure
-- `SKILL.md`: skill metadata and governance logic
+- `SKILL.md`: skill metadata and governance logic (skills.sh manifest)
+- `.claude-plugin/plugin.json`: Claude Code plugin manifest (v0.4+)
+- `commands/doc-governance-skill.md`: root slash-command spec (`/doc-governance-skill`)
+- `commands/update.md`: update slash-command spec (`/doc-governance-skill:update`)
+- `bin/audit.js`, `bin/update.js`, `bin/lib/scan.js`: zero-dependency Node runtime (audit + update modes)
 - `SECURITY.md`: security disclosure process and hardening policy
 - `CONTRIBUTING.md`: contribution expectations and validation baseline
 - `CODE_OF_CONDUCT.md`: collaboration and behavior expectations
@@ -161,6 +165,28 @@ SUMMARY: 0 critical, 1 warnings, 0 info
 Exit codes: audit → 0 OK / 1 error. Update → 0 clean or Info-only / 1 with Warning or Critical.
 
 Commit `.doc-governance/map.md` — it is the shared baseline for the update mode.
+
+## Slash-Commands
+
+Este repo se distribuye como **skill** (`SKILL.md`) y como **plugin** de Claude Code (`.claude-plugin/plugin.json` + `commands/`) desde el mismo árbol. Instalada como plugin, aparecen **dos slashes literales** en el menú:
+
+- **`/doc-governance-skill`** — Revisar cambios, decidir qué docs actualizar, y al final ofrece sellar un baseline nuevo (te pregunta antes de tocar nada). Empoderá al user, no lo reemplaza.
+- **`/doc-governance-skill:update`** — Chequeo directo de drift: qué docs mencionan código que cambió desde el último baseline. Solo reporta, no edita.
+
+**Instalación como plugin** (para tener los 2 slashes literales):
+```bash
+# copiá el repo (o su release publicado) a la carpeta de plugins de Claude Code
+claude plugin install /ruta/al/repo/doc-governance-skill
+# o vía marketplace si está publicado
+```
+
+**Instalación como skill** (default vía skills.sh — 1 slash literal + sub-modos por intent):
+```bash
+npx skills add NANDI-Services/doc-governance-skill
+```
+En modo skill, `/doc-governance-skill` es el único slash literal; el sub-modo update se activa por conversación ("corré modo update", "chequeá drift").
+
+**Automatización sin agente:** los scripts `bin/audit.js` y `bin/update.js` siguen siendo callable directo desde terminal, CI o git hooks — sin pasar por el agente ni por el slash.
 
 ## Real Scenario
 Change implemented:

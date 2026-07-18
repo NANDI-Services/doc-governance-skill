@@ -263,3 +263,7 @@ See `RELEASE_CHECKLIST.md` for a concise pre-release runbook.
 
 ## License
 This repository is released under the MIT License. See `LICENSE`.
+
+## Lessons Learned
+
+- [2026-07-18] Skills.sh listing is telemetry-driven; only `npx skills add` triggers indexing.

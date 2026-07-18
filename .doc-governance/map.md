@@ -1,7 +1,7 @@
 <!-- doc-governance:map v1 -->
-sealed_sha: aec8d4493d87edf27d3d1ccbd61ad2fa71bf75ec
-sealed_at: 2026-07-18T01:21:42.533Z
-tool_version: 0.2.0
+sealed_sha: 176725ee4dd10d05d488d0e829523bc0421b7467
+sealed_at: 2026-07-18T18:13:23.091Z
+tool_version: 0.2.3
 
 ## Inventory
 
@@ -40,10 +40,80 @@ headings:
   - H2: Completion Rules
   - H2: Validation Failure Handling
   - H2: Operating Procedure
-  - H2: Installed Skill: doc-governance-skill
 code_refs:
-  - .doc-governance/map.md
   - ROADMAP.md
+
+### CHANGELOG.md
+title: Changelog
+headings:
+  - H1: Changelog
+  - H2: [0.2.3] - 2026-07-18
+  - H2: [0.2.2] - 2026-07-18
+  - H2: [0.2.1] - 2026-07-18
+  - H2: [0.2.0] - 2026-07-18
+  - H2: [0.2.0] - 2026-07-17
+  - H3: Added
+  - H3: Changed
+  - H2: [0.1.0] - 2026-07-17
+  - H3: Added
+code_refs:
+  - .ai/skills/doc-governance-skill/
+  - .doc-governance/map.md
+  - .github/scripts/release.sh
+  - .github/workflows/release.yml
+  - .md
+  - AGENTS.md
+  - CODE_OF_CONDUCT.md
+  - CONTRIBUTING.md
+  - README.md
+  - RELEASE_CHECKLIST.md
+  - ROADMAP.md
+  - SECURITY.md
+  - SKILL.md
+  - bin/
+  - bin/audit.js
+  - bin/lib/scan.js
+  - bin/update.js
+  - install.ps1
+  - install.sh
+  - templates/
+  - templates/AGENTS.append.md
+  - templates/pre-commit-doc-check.sh
+  - uninstall.sh
+
+### CLAUDE.md
+title: CLAUDE.md
+headings:
+  - H1: CLAUDE.md
+  - H2: What This Repo Is
+  - H2: Two-Mode Runtime
+  - H2: Install Scripts
+  - H2: Release Pipeline
+  - H2: Conventions
+  - H2: Common Tasks
+  - H2: Skills.sh Publishing
+code_refs:
+  - .ai
+  - .doc-governance/map.md
+  - .git
+  - .github/scripts/release.sh
+  - .github/workflows/release.yml
+  - .next
+  - .venv
+  - AGENTS.md
+  - CHANGELOG.md
+  - README.md
+  - RELEASE_CHECKLIST.md
+  - SKILL.md
+  - bin/
+  - bin/audit.js
+  - bin/lib/scan.js
+  - install.ps1
+  - install.sh
+  - package.json
+  - templates/
+  - templates/AGENTS.append.md
+  - uninstall.sh
 
 ### CODE_OF_CONDUCT.md
 title: Code of Conduct
@@ -98,12 +168,15 @@ headings:
   - H3: 4. Validate AGENTS Block Management
   - H2: Publishing Readiness
   - H2: License
+  - H2: Lessons Learned
 code_refs:
+  - .ai/skills/doc-governance-skill/
   - .doc-governance/map.md
   - AGENTS.md
   - API.md
   - ARCHITECTURE.md
   - CHANGELOG.md
+  - CLAUDE.md
   - CODE_OF_CONDUCT.md
   - CONTRIBUTING.md
   - OPERATIONS.md
@@ -125,14 +198,21 @@ headings:
   - H2: Discovery and Metadata
   - H2: Documentation Quality
   - H2: Script Safety
+  - H2: Dual-Mode Executables (v0.2+)
+  - H2: Auto-Bootstrap Smoke (v0.3+)
   - H2: Publication Readiness
 code_refs:
+  - .ai/skills/doc-governance-skill/bin/
+  - .doc-governance/map.md
   - CONTRIBUTING.md
   - README.md
   - SECURITY.md
   - SKILL.md
+  - audit.js
+  - bin/
   - install.ps1
   - install.sh
+  - templates/
   - templates/AGENTS.append.md
   - uninstall.sh
 
@@ -147,6 +227,7 @@ headings:
   - H2: Risks
   - H2: Evidence Map
   - H2: Assumptions
+  - H2: Deferred Backlog (v0.3+)
   - H1: Project Roadmap
   - H2: Product North Star
   - H2: Current State
@@ -162,7 +243,9 @@ headings:
   - H3: Risks
   - H3: Anti-goals
 code_refs:
+  - .doc-governance/config.json
   - .github/workflows/
+  - .github/workflows/doc-governance.yml
   - AGENTS.md
   - CONTRIBUTING.md
   - RELEASE_CHECKLIST.md
@@ -206,12 +289,15 @@ headings:
   - H2: Update Rules
   - H2: Document Routing By Type
   - H2: Minimal Output Format
+  - H3: When to emit which format
   - H2: Style Constraints
   - H2: Audit Mode
   - H2: Update Mode
+  - H2: First Run / No Baseline
   - H2: Drift Categories Monitored
 code_refs:
   - .ai
+  - .ai/skills/doc-governance-skill/
   - .doc-governance/map.md
   - .git
   - .md
@@ -221,11 +307,15 @@ code_refs:
   - API.md
   - ARCHITECTURE.md
   - CHANGELOG.md
+  - CLAUDE.md
   - CONTRIBUTING.md
   - OPERATIONS.md
   - README.md
   - SECURITY.md
   - TROUBLESHOOTING.md
+  - audit.js
+  - bin/update.js
+  - install.sh
 
 ### docs/plan.md
 title: Plan — doc-governance-skill v0.2 (audit + update dual-mode)
@@ -244,8 +334,14 @@ headings:
   - H2: Reference files ya existentes que reutilizar
   - H2: Deuda deliberada (marcada con `ponytail:` comment en el código)
 code_refs:
+  - .../update.js
+  - ..HEAD
+  - ./install.sh
   - ./uninstall.sh
+  - .ai/skills/
+  - .ai/skills/doc-governance-skill/
   - .ai/skills/doc-governance-skill/bin/
+  - .ai/skills/doc-governance-skill/bin/audit.js
   - .doc-governance/
   - .doc-governance/config.json
   - .doc-governance/map.md
@@ -271,10 +367,40 @@ code_refs:
   - install.ps1
   - install.sh
   - sam-bretz/harness
+  - templates/
   - templates/AGENTS.append.md
   - templates/pre-commit-doc-check.sh
   - uninstall.sh
   - update.js
+
+### graphify-out/GRAPH_REPORT.md
+title: Graph Report - doc-governance-skill  (2026-07-18)
+headings:
+  - H1: Graph Report - doc-governance-skill  (2026-07-18)
+  - H2: Corpus Check
+  - H2: Summary
+  - H2: Graph Freshness
+  - H2: Community Hubs (Navigation)
+  - H2: God Nodes (most connected - your core abstractions)
+  - H2: Surprising Connections (you probably didn't know these)
+  - H2: Import Cycles
+  - H2: Communities (15 total, 2 thin omitted)
+  - H3: Community 0 - "Community 0"
+  - H3: Community 1 - "Community 1"
+  - H3: Community 2 - "Community 2"
+  - H3: Community 3 - "Community 3"
+  - H3: Community 4 - "Community 4"
+  - H3: Community 5 - "Community 5"
+  - H3: Community 6 - "Community 6"
+  - H3: Community 7 - "Community 7"
+  - H3: Community 8 - "Community 8"
+  - H3: Community 9 - "Community 9"
+  - H3: Community 10 - "Community 10"
+  - H3: Community 14 - "Community 14"
+  - H2: Knowledge Gaps
+  - H2: Suggested Questions
+code_refs:
+  - .doc-governance/map.md
 
 ### templates/AGENTS.append.md
 title: (untitled)

@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.1] - 2026-07-18
+
+- Merge branch 'main' of https://github.com/NANDI-Services/doc-governance-skill
+- feat: enhance documentation and installation scripts for dual distribution as skill and plugin
+
 ## [0.3.0] - 2026-07-18
 
 - chore: re-seal doc-governance baseline

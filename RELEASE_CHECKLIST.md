@@ -20,6 +20,13 @@ Use this checklist before publishing a new tag.
 - [ ] `uninstall.sh` removes installed files and marker block safely.
 - [ ] `templates/AGENTS.append.md` was reviewed as a trusted-source boundary before release.
 
+## Dual-Mode Executables (v0.2+)
+- [ ] `node bin/audit.js` writes `.doc-governance/map.md` with a non-empty `sealed_sha:` (or `(no-git)` outside a repo) and exit 0.
+- [ ] `.doc-governance/map.md` lists every top-level `*.md` at least once (spot-check `README.md`, `SKILL.md`).
+- [ ] `node bin/update.js` on a clean tree exits 0 with `SUMMARY: 0 critical, 0 warnings, 0 info`.
+- [ ] `node bin/update.js` after touching a code path referenced by any doc reports at least one Warning and exits 1.
+- [ ] `install.sh` and `install.ps1` copy `bin/` alongside `SKILL.md` and `templates/`; installed `audit.js` runs from `.ai/skills/doc-governance-skill/bin/`.
+
 ## Publication Readiness
 - [ ] `npx skills add NANDI-Services/doc-governance-skill --list` shows this skill.
 - [ ] License file is present and correct.

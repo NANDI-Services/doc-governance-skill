@@ -15,3 +15,14 @@ if echo "$CHANGED" | grep -Eq "$IMPACT_PATTERN"; then
     echo "[repo-doc-governance] Run the doc impact review before committing if documentation impact exists."
   fi
 fi
+
+# Non-blocking staleness check against sealed baseline (if present).
+if [ -f .doc-governance/map.md ]; then
+  SEALED_SHA=$(grep -m1 '^sealed_sha:' .doc-governance/map.md 2>/dev/null | awk '{print $2}' || true)
+  if [ -n "${SEALED_SHA:-}" ] && [ "$SEALED_SHA" != "(none)" ]; then
+    if git diff --name-only "$SEALED_SHA" -- 2>/dev/null | grep -Eiq '\.md$'; then
+      echo "[repo-doc-governance] Warning: .md files changed since sealed SHA ($SEALED_SHA)."
+      echo "[repo-doc-governance] Run the audit mode to re-seal .doc-governance/map.md."
+    fi
+  fi
+fi

@@ -1,6 +1,7 @@
 ---
 name: doc-governance-skill
 description: Decide doc-impact after meaningful code, config, CI/CD, security, architecture, API, or workflow changes, route updates to the right files, and avoid activation for cosmetic-only or behavior-neutral edits.
+version: 0.2.0
 ---
 
 # Repo Doc Governance
@@ -94,3 +95,48 @@ Persisted Rule: [rule applied or "None"]
 - Prefer precise, local edits over broad rewrites.
 - Do not force documentation updates when impact is absent.
 - If multiple documents are impacted, update all relevant ones.
+
+## Audit Mode
+Invoke when the human asks for a documentation map, a repo audit, or uses phrases like "audita la documentación" / "map the docs" / "/audit". This mode is heavy and infrequent — run it once per baseline, not per change.
+
+Command:
+```bash
+node .ai/skills/doc-governance-skill/bin/audit.js
+```
+
+Behavior:
+- Scans every `*.md` in the repo (skipping `.git`, `node_modules`, `dist`, `build`, `.next`, `target`, `vendor`, `.venv`, `venv`, `.doc-governance`, `.ai`).
+- For each doc, records: title (first H1), heading tree (H1–H3), and detected code refs (paths in backticks + fenced blocks annotated with `path=`).
+- Writes `.doc-governance/map.md`, sealed with the current `git HEAD` SHA and an ISO 8601 timestamp.
+- Exit 0 on success, 1 on I/O or git error.
+
+After running audit, commit `.doc-governance/map.md`. It is the shared baseline the update mode diffs against.
+
+## Update Mode
+Invoke when the human asks for a doc-drift check, uses phrases like "update docs" / "actualizá la documentación" / "/update", or after finishing a meaningful change. This mode is lightweight — safe to run per task.
+
+Command:
+```bash
+node .ai/skills/doc-governance-skill/bin/update.js
+```
+
+Optional overrides:
+- `--since <ref>` — diff against a specific git ref instead of the sealed SHA.
+- `--files a,b,c` — explicit file list, skip git diff entirely.
+- stdin — accepts one path per line (e.g. `git diff --name-only | node .../update.js`).
+
+Behavior:
+- Reads `.doc-governance/map.md`, extracts the sealed SHA.
+- Runs `git diff --name-only <sealed_sha>` (working-tree comparison → catches committed + uncommitted).
+- Cross-references changed paths against `code_refs` in the map.
+- Emits a `DOC_GOVERNANCE_UPDATE:` block with three severity tiers (Critical / Warning / Info) and a `SUMMARY:` line.
+- Exit 0 clean or Info-only, 1 with any Warning or Critical finding.
+
+For each `- doc: <path>` in the emitted Warning list, use the routing table in `## Document Routing By Type` above to decide whether that doc is the right target — the audit tool detects references, not intent.
+
+## Drift Categories Monitored
+| Severity | Trigger | Suggested Action |
+|---|---|---|
+| Critical | Reserved for v0.3+ (semantic mismatch between doc and code signature) | Not emitted in v0.2. |
+| Warning | Code path referenced by a doc changed since the sealed SHA | Review the doc sections that mention the changed path; update or confirm still accurate. |
+| Info | `.md` files changed since the sealed SHA (map may be stale) | Re-run audit mode to re-seal the baseline. |

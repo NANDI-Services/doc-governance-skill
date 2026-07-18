@@ -117,6 +117,20 @@ The following are explicitly marked as inferred — not stated in repo documenta
 
 ---
 
+## Deferred Backlog (v0.3+)
+
+Explicitly deferred from v0.2 to keep the shipped surface minimal. Each item lands only when a real usage need appears — YAGNI applies.
+
+- **Auto-apply updates** (`update --apply`): rewrite doc sections referenced by changed code. Requires trust-boundary and diff review UX before shipping.
+- **Semantic mismatch detection**: compare docstring/signature drift for `Critical` findings. Currently reserved but never emitted.
+- **JSON output format**: `--format json` for machine consumers. Text is enough while human review dominates.
+- **Config file** (`.doc-governance/config.json`): override excludes, custom routing table. Hardcoded defaults cover v0.2.
+- **Explicit YAML mappings** (harness-style): pin doc↔code pairs when auto-detection misses. Add only if backtick heuristic falls short.
+- **CI enforcement workflow**: `.github/workflows/doc-governance.yml` template that fails PRs on Warning. Currently opt-in via pre-commit hook.
+- **Semantic ref detection**: extract function/class names without paths. Precision > recall in v0.2; upgrade if false negatives dominate.
+
+---
+
 <!-- rs:managed:start -->
 # Project Roadmap
 

@@ -28,6 +28,13 @@ Teams often over-update or under-update docs after implementation work. This ski
 
 The goal is accurate documentation with minimal churn.
 
+## Positioning vs Alternatives
+Other doc-drift tools stop at detection. This skill was built around three specific choices:
+
+- **Persisted, SHA-sealed baseline.** The audit mode produces `.doc-governance/map.md` and seals it with the current `git HEAD`. Update runs diff against that exact SHA — no ambient state, reproducible on any machine that has the commit.
+- **Routing to canonical docs, not just alerts.** When a doc references code that changed, the report names the doc *and* points to the routing table (`README.md`, `SECURITY.md`, `API.md`, `docs/**`, etc.) so the fix has a destination, not just a signal.
+- **Minimal, reproducible completion format.** Every run emits the same three-line completion block (`Action Taken` / `Justification` / `Persisted Rule`) — trivially parseable and stable across releases.
+
 ## Why This Skill
 Manual doc review is inconsistent and often noisy. This skill gives a deterministic routing flow that:
 - standardizes what counts as a meaningful change
@@ -106,6 +113,48 @@ Action Taken: Multiple
 Justification: CI workflow and deployment commands changed, requiring README and OPERATIONS updates.
 Persisted Rule: Updated CI/CD and operations documentation routing rules.
 ```
+
+## Two-Mode Operation
+The skill ships two executable modes invoked by human intent — no runtime slash-command registration required. Both scripts are pure Node with no npm dependencies.
+
+**Audit** (heavy, occasional) — run once to seal a baseline of the repo's documentation structure and code-doc references:
+```bash
+node .ai/skills/doc-governance-skill/bin/audit.js
+git add .doc-governance/map.md && git commit -m "Seal doc-governance baseline"
+```
+
+**Update** (lightweight, per-change) — diff the current working tree against the sealed SHA, cross-reference changed paths against the map, and emit a drift punch list:
+```bash
+node .ai/skills/doc-governance-skill/bin/update.js
+```
+
+Update accepts optional overrides: `--since <ref>` (diff against a different git ref), `--files a,b,c` (skip git diff, use an explicit file list), or stdin (`git diff --name-only | update.js`).
+
+Example output when one changed code file is referenced by a doc:
+```text
+DOC_GOVERNANCE_UPDATE:
+
+sealed_sha: <SHA>
+diff_range: <SHA>..worktree
+files_changed: 1
+docs_affected: 1
+
+CRITICAL (0):
+
+WARNING (1):
+  - doc: README.md
+    referenced_code_changed: [scripts/deploy.sh]
+    reason: doc references code that changed since baseline
+    suggested_action: review sections in README.md that mention changed paths
+
+INFO (0):
+
+SUMMARY: 0 critical, 1 warnings, 0 info
+```
+
+Exit codes: audit → 0 OK / 1 error. Update → 0 clean or Info-only / 1 with Warning or Critical.
+
+Commit `.doc-governance/map.md` — it is the shared baseline for the update mode.
 
 ## Real Scenario
 Change implemented:

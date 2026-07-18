@@ -59,6 +59,7 @@ if (Test-Path -Path $DestDir) {
 New-Item -ItemType Directory -Force -Path $DestDir | Out-Null
 Copy-Item -Force (Join-Path $ScriptDir 'SKILL.md') $DestDir
 Copy-Item -Recurse -Force (Join-Path $ScriptDir 'templates') $DestDir
+Copy-Item -Recurse -Force (Join-Path $ScriptDir 'bin') $DestDir
 
 if (-not (Test-Path $AgentsFile)) {
     Set-Content -Path $AgentsFile -Value "# AGENTS.md`r`n" -Encoding utf8

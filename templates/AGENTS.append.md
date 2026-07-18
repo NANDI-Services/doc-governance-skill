@@ -19,5 +19,9 @@ If impact exists, route updates to the right document(s):
 - API.md
 - docs/**
 
+For heavy audits (rare): run `node .ai/skills/doc-governance-skill/bin/audit.js` to seal a baseline map at `.doc-governance/map.md` and commit it.
+
+For per-change drift checks: run `node .ai/skills/doc-governance-skill/bin/update.js` and act on the emitted `DOC_GOVERNANCE_UPDATE:` block.
+
 Always emit the minimal completion block defined in SKILL.md.
 <!-- repo-doc-governance:end -->

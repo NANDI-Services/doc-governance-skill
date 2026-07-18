@@ -62,6 +62,7 @@ rm -rf "$DEST_DIR" || die "Failed to reset destination: $DEST_DIR"
 mkdir -p "$DEST_DIR" || die "Failed to create destination: $DEST_DIR"
 cp "$SCRIPT_DIR/SKILL.md" "$DEST_DIR/SKILL.md" || die "Failed to copy SKILL.md"
 cp -R "$SCRIPT_DIR/templates" "$DEST_DIR/" || die "Failed to copy templates"
+cp -R "$SCRIPT_DIR/bin" "$DEST_DIR/" || die "Failed to copy bin"
 
 if [ ! -f "$AGENTS_FILE" ]; then
   cat > "$AGENTS_FILE" <<'AGENTS' || die "Failed to create AGENTS.md"

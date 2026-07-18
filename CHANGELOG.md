@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0] - 2026-07-18
+
+- fix: update release workflow to use RELEASE_TOKEN instead of GITHUB_TOKEN
+- fix: add 'graphify-out/' to .gitignore to prevent tracking of generated output
+- feat: implement automated release pipeline with version bumping and changelog updates
+- Add initial documentation for Agent Roadmap Sync Rules and ROADMAP
+- Refactor skill name to 'doc-governance-skill' across documentation and scripts for consistency
+
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions after
 v0.2.0 are appended automatically by `.github/workflows/release.yml` on

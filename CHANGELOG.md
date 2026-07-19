@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.6.1] - 2026-07-19
+
+- chore: update changelog and roadmap for v0.6.0 release details
+
 ## [0.6.0] - 2026-07-19
 
 ### Added

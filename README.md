@@ -81,6 +81,16 @@ claude plugin install doc-governance-skill@nandi-services
 
 Two commands, one flow. Claude Code's [plugin install CLI](https://code.claude.com/docs/en/plugins-reference#plugin-install) resolves plugin names from configured marketplaces — a bare `owner/repo` reference is never accepted. This repo publishes its own single-plugin marketplace (`.claude-plugin/marketplace.json`, named `nandi-services`) so both steps target the same tree.
 
+#### Why two commands?
+
+Claude Code separates **catalog registration** from **plugin install** on purpose:
+
+- **`marketplace add` = register a catalog.** A marketplace is a `marketplace.json` that lists one or many plugins ([official docs](https://code.claude.com/docs/en/plugin-marketplaces): *"To publish multiple plugins under one marketplace name, list them all in a single `marketplace.json`"*). The catalog can even point at plugins hosted in **other** repos — marketplace source and plugin source are independent.
+- **`install <plugin>@<marketplace>` = pick a plugin from an already-trusted catalog.** Trust is granted once at `marketplace add`; each individual install is a smaller decision on top of that trust.
+- **Not a repo choice — a CLI design choice.** The `plugin install` argument grammar is `plugin-name` or `plugin-name@marketplace-name` ([plugins-reference](https://code.claude.com/docs/en/plugins-reference#plugin-install)); `owner/repo` is not in the grammar. Any repo — one plugin or fifty — installs the same way.
+
+In this repo the marketplace has exactly one plugin, so the two steps look redundant. They're not: they're the same shape every Claude Code plugin uses. If you want a real one-liner and are OK giving up the literal `/doc-governance-skill:update` sub-slash, see the [skills.sh fallback](#skillssh-fallback) below.
+
 After install:
 
 - **Plugin** → the `/doc-governance-skill:update` sub-slash appears literally in the palette.

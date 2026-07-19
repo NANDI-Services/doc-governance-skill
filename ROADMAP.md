@@ -34,7 +34,7 @@ The following criteria are sourced from `README.md:203-210` (Publishing Readines
 - `SECURITY.md` and `CONTRIBUTING.md` are present and current — *README.md:207*
 - License and release checklist are present — *README.md:208*
 - All `RELEASE_CHECKLIST.md` items are checked — *RELEASE_CHECKLIST.md:5-26* [INFERRED: currently all unchecked]
-- GitHub release object exists with release notes for `v0.1.0` — [INFERRED: tag exists but no GitHub release page confirmed]
+- GitHub release object exists with release notes for the current release — v0.6.0 shipped via `.github/scripts/release.sh` with CHANGELOG.md entries
 - At least one consuming repository successfully installs and uses the skill — [INFERRED: no adoption evidence in repo]
 
 ---
@@ -108,12 +108,12 @@ Items marked [INFERRED] are not explicitly documented in the repository.
 
 The following are explicitly marked as inferred — not stated in repo documentation:
 
-- [INFERRED] v0.1.0 is ready for release pending validation runs. No changelog, test run logs, or CI results confirm this.
+- [HISTÓRICO] v0.1.0 assumption era relevante en jul-17 2026. Actual: v0.6.0 shipped, CHANGELOG.md activo, release.yml automatiza bumps.
 - [INFERRED] `npx skills add NANDI-Services/doc-governance-skill --list` currently returns the skill. Web leaderboard visibility is explicitly noted as uncertain (`README.md:78-79`).
 - [INFERRED] No automated test suite exists. No `.github/workflows/`, `*.test.*`, `bats/`, or `test/` files were found in the repository.
 - [INFERRED] `install.ps1` may lag behind `install.sh` in future updates without an enforced parity check.
 - [INFERRED] Real-world adoption is currently zero. No consuming repositories are referenced in this repo.
-- [INFERRED] A GitHub release page (with release notes body) has not been created for `v0.1.0`, only a git tag.
+- [HISTÓRICO] Aplicaba a v0.1.0 en jul-17 2026. Release workflow (.github/workflows/release.yml) genera release notes desde v0.3.0 en adelante.
 
 ---
 
@@ -128,6 +128,11 @@ Explicitly deferred from v0.2 to keep the shipped surface minimal. Each item lan
 - **Explicit YAML mappings** (harness-style): pin doc↔code pairs when auto-detection misses. Add only if backtick heuristic falls short.
 - **CI enforcement workflow**: `.github/workflows/doc-governance.yml` template that fails PRs on Warning. Currently opt-in via pre-commit hook.
 - **Semantic ref detection**: extract function/class names without paths. Precision > recall in v0.2; upgrade if false negatives dominate.
+- **Rename-only diff classifier**: detect `sed A→B` applied uniformly to N lines of real code (not just comments). Comment-only case already handled in v0.6.0; extending to code renames requires an N-way substitution invariant check — non-trivial and prone to false negatives.
+- **Anchor-level report**: emit `X.md:42-58 (section: ## Prisma schema)` instead of `X.md`. Requires `bin/lib/scan.js` to index line ranges per heading. Deferred until the flat file-level report proves insufficient in practice.
+- **Link vs prose distinction in code refs**: only warn when a doc contains a markdown link `](path)`, not a bare backtick mention. Requires refactor of `extractCodeRefs` in `bin/lib/scan.js` to preserve context. Would reduce README/CLAUDE.md false positives materially.
+- **Auto-suggest reseal at threshold**: when `map_staleness >= 3` `.md` files, offer to re-audit inline with a confirm prompt. Small UX add, orthogonal to core logic.
+- **`--include-trivial` flag**: escalate `whitespace-only`/`comment-only` INFO back to WARNING for operators that want maximum recall. Add on request only.
 
 ---
 
@@ -148,13 +153,13 @@ Ship validated, high-impact increments with deterministic delivery and transpare
 - [ ] Add automated test harness for Shell <!-- rs:task=p0-add-automated-test-harness-for-shell -->
 - [ ] Close critical TODO and FIXME items blocking release confidence <!-- rs:task=p0-close-critical-todo-and-fixme-items-blocking-release-confidence -->
 - [ ] Document measurable north star metrics for Shell <!-- rs:task=p0-document-measurable-north-star-metrics-for-shell -->
-- [ ] Implement critical tasks required for milestone v0.1 <!-- rs:task=p0-implement-critical-tasks-required-for-milestone-v0-1 -->
+- [x] Implement critical tasks required for milestone v0.1 <!-- rs:task=p0-implement-critical-tasks-required-for-milestone-v0-1 -->
 - [ ] Stabilize project baseline and unblock high-risk delivery paths <!-- rs:task=p0-stabilize-project-baseline-and-unblock-high-risk-delivery-paths -->
 
 ### Phase P1 (Important)
 - [ ] Expand feature completeness and improve reliability <!-- rs:task=p1-expand-feature-completeness-and-improve-reliability -->
 - [ ] Expand feature-level validation and regression checks <!-- rs:task=p1-expand-feature-level-validation-and-regression-checks -->
-- [ ] Reduce operational risk before v0.3 <!-- rs:task=p1-reduce-operational-risk-before-v0-3 -->
+- [x] Reduce operational risk before v0.3 <!-- rs:task=p1-reduce-operational-risk-before-v0-3 -->
 
 ### Phase P2 (Optimization)
 - [ ] Close non-critical backlog aligned to anti-goals <!-- rs:task=p2-close-non-critical-backlog-aligned-to-anti-goals -->
@@ -162,13 +167,13 @@ Ship validated, high-impact increments with deterministic delivery and transpare
 - [ ] Complete release candidate checklist and production readiness review <!-- rs:task=p2-complete-release-candidate-checklist-and-production-readiness-review -->
 
 ## Release Milestones
-- [ ] v0.1: Foundation baseline complete <!-- rs:task=milestone-v0-1 -->
-- [ ] v0.2: Core feature coverage stabilized <!-- rs:task=milestone-v0-2 -->
-- [ ] v0.3: Release candidate hardening complete <!-- rs:task=milestone-v0-3 -->
+- [x] v0.1: Foundation baseline complete <!-- rs:task=milestone-v0-1 -->
+- [x] v0.2: Core feature coverage stabilized <!-- rs:task=milestone-v0-2 -->
+- [x] v0.3: Release candidate hardening complete <!-- rs:task=milestone-v0-3 -->
 - [ ] v1.0: Production readiness exit criteria met <!-- rs:task=milestone-v1-0 -->
 
 ## Command/Module Breakdown
-- [ ] Identify command/module boundaries for the next increment <!-- rs:task=identify-command-module-boundaries -->
+- [x] Identify command/module boundaries for the next increment <!-- rs:task=identify-command-module-boundaries -->
 
 ## Exit Criteria Per Phase
 - [ ] P0: all critical checklist items validated by code/test/artifact evidence <!-- rs:task=exit-p0-all-critical-checklist-items-validated-by-code-test-artifact-evidence -->

@@ -13,13 +13,6 @@
 - **Exit code semantics**: `update.js` now returns 1 only when there are substantive WARNINGs. Trivial (comment/whitespace-only), renames, auto-bootstrap and map-staleness are INFO and return 0 — informational, non-blocking.
 - **Report shape**: WARNING entries use `code_file` / `affected_docs` / `diff_sample` (not `doc` / `referenced_code_changed`). CRITICAL still reserved for a future anchor-removal signal.
 
-### Deferred to a future release
-- Rename-only classifier (detect `sed` A→B applied to N lines of real code).
-- Anchor-level report (`X.md:42-58 (section: ## …)`).
-- Distinguishing markdown links `](path)` from prose backticks in `extractCodeRefs`.
-- Auto-suggest reseal when `map_staleness >= 3`.
-- `--include-trivial` flag to escalate INFO trivial back to WARNING.
-
 ## [0.5.7] - 2026-07-19
 
 - fix: update actions/checkout version to a specific commit for stability

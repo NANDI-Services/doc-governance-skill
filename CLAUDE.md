@@ -30,11 +30,11 @@ claude plugin install doc-governance-skill@nandi-services
 
 Once installed, the same tree exposes both surfaces because a Claude Code plugin with a `SKILL.md` at the root, no `skills/` subdirectory, and no `skills` manifest field is auto-loaded as a single-skill plugin (Claude Code v2.1.142+, [plugins reference](https://code.claude.com/docs/en/plugins-reference#skills)). Result after install:
 
-- `/doc-governance-skill` → auto-registered from root `SKILL.md` (skill invocation name comes from `name:` frontmatter).
+- `/doc-governance-skill` → literal slash from `commands/doc-governance-skill.md` (thin wrapper that redirects to `SKILL.md`'s `## Root Invocation Behavior`).
 - `/doc-governance-skill:update` → literal sub-slash from `commands/update.md`.
-- Sub-mode `update` also activates by intent ("corré modo update"); the agent reads `commands/update.md` as the formal spec.
+- Root `SKILL.md` is also auto-loaded as invocable-by-intent (agent picks it when task context matches its `description`), but that auto-load does **not** create a `/plugin-name` slash in the palette — only files under `commands/` create literal slashes. Discovered end-to-end in v0.5.2 after v0.4.0 removed `commands/doc-governance-skill.md` on the incorrect assumption that the auto-load covered it.
 
-There is **no** `commands/doc-governance-skill.md` — it would collide with the auto-registered root skill and its content duplicated `SKILL.md`'s `## Root Invocation Behavior` section. Do not re-add it; edit `SKILL.md` instead.
+The canonical behavior spec is still `SKILL.md`. `commands/doc-governance-skill.md` is a thin pointer whose only job is to expose the root slash. Do not duplicate the `## Root Invocation Behavior` content in the commands file — keep it as a redirect.
 
 Fallback distribution: `npx skills add NANDI-Services/doc-governance-skill` still works and keeps the skills.sh leaderboard alive, but registers only the skill (no literal sub-slash). Document it as a fallback, not the recommended path.
 

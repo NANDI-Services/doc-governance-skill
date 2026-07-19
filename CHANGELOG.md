@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.5.2] - 2026-07-19
+
+### Fixed
+- Restaurar `commands/doc-governance-skill.md` (borrado por error en v0.4.0). El plugin loader de Claude Code carga el `SKILL.md` de la raíz como skill invocable-por-intent pero NO crea el slash literal `/doc-governance-skill` en la paleta. La assumption de v0.4.0 ("auto-registered root skill = literal slash") era falsa. Solo el archivo bajo `commands/` registra el slash literal. Verificado end-to-end en `C:\Users\ezesc\Github\SGG`: tras `plugin install` limpio (con `.bak` + bundles per-repo removidos) solo aparecía `/doc-governance-skill:update`, nunca el root.
+
 ## [0.5.1] - 2026-07-19
 
 - docs: clarify the two-step installation process and its purpose in README.md

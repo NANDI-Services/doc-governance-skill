@@ -6,7 +6,7 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const TOOL_VERSION = '0.5.1';
+const TOOL_VERSION = '0.5.2';
 
 function findRepoRoot() {
   try {

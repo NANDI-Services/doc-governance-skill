@@ -1,7 +1,7 @@
 ---
 name: doc-governance-skill
 description: Decide doc-impact after meaningful code, config, CI/CD, security, architecture, API, or workflow changes, route updates to the right files, and avoid activation for cosmetic-only or behavior-neutral edits.
-version: 0.5.4
+version: 0.5.6
 ---
 
 # Repo Doc Governance
@@ -36,12 +36,28 @@ Do not run this skill for behavior-neutral edits:
 - temporary debugging changes removed before completion
 
 ## Activation Signals
-Common request patterns that should activate this skill:
+Common request patterns that should activate this skill.
+
+**Terminación de sesión (frases naturales, el 80% de los casos):**
+- "actualizá los docs" / "actualizá la documentación"
+- "update docs" / "update the docs"
+- "revisá docs" / "chequeá docs"
+- "chequeá qué docs cambiaron"
+- "cerrá esta task revisando docs"
+- "docs impact?" / "doc impact after this?"
+
+**Después de un cambio específico (más contexto):**
+- "actualizá docs después de estos cambios"
 - "update docs after changing CI pipeline"
 - "we changed setup/install steps"
 - "security/auth flow changed, what docs need updates?"
 - "API contract changed, which docs should be updated?"
 - "review doc impact before closing this task"
+
+**Invocación explícita del skill (bypass heuristics):**
+- "corré doc-governance-skill"
+- "usá el skill de doc governance"
+- Slash literal: `/doc-governance-skill:review` (flujo completo) o `/doc-governance-skill:update` (solo drift check)
 
 ## Non-Activation Signals
 Common request patterns that should not activate this skill:
@@ -154,19 +170,31 @@ On the first invocation in a repo without `.doc-governance/map.md`:
 
 To seal a baseline explicitly (larger repos, CI-driven bootstrap), run `audit.js` first — behavior is identical.
 
-## Root Invocation Behavior (`/doc-governance-skill`)
+## Root Invocation Behavior
 
-Este repo se instala en dos pasos (`claude plugin marketplace add NANDI-Services/doc-governance-skill` + `claude plugin install doc-governance-skill@nandi-services`), que registran plugin y skill desde el mismo árbol. También existe una ruta fallback vía skills.sh (`npx skills add ...`) que registra solo el skill.
+Este flujo aplica cuando el skill se activa — sea por slash (`/doc-governance-skill:review`) o por intent phrasing ("actualizá docs", "revisá qué docs cambiaron", etc.).
 
-**Cómo se ve en el menú según cómo esté instalada:**
-- **Vía `claude plugin marketplace add` + `install` (recomendado)** → aparecen 2 slashes literales:
-  - `/doc-governance-skill` (root, este flujo) — el plugin loader auto-registra el `SKILL.md` de la raíz como single-skill del plugin (docs oficiales: sin `skills/` dir y sin campo `skills` en el manifest, el root SKILL.md se carga automáticamente).
-  - `/doc-governance-skill:update` (chequeo de drift directo) — viene de `commands/update.md`.
-- **Vía `npx skills add` (fallback skills.sh)** → aparece 1 slash literal:
-  - `/doc-governance-skill` — el mismo flujo, autogenerado del `name:` del frontmatter.
-  - El sub-modo update se activa por intent en la conversación ("corré modo update", "chequeá drift"). El agente lee `commands/update.md` como spec formal.
+### Cold-start guard — chequeá esto ANTES de nada
 
-**Flujo del root (idéntico en skill y plugin):**
+Verificá si existe `.doc-governance/map.md` en el repo actual:
+
+```bash
+test -f .doc-governance/map.md && echo "map exists" || echo "no map"
+```
+
+**Si "no map"** (primer uso en este repo): NO sigas con los pasos 1-4 de abajo. Hacé exactamente esto:
+
+1. Ubicá el skill root con `find ~/.claude/plugins/cache/nandi-services/doc-governance-skill -name 'SKILL.md' -not -path '*/node_modules/*' | head -1 | xargs dirname` (fallback a `~/.claude/skills/doc-governance-skill` o `.ai/skills/doc-governance-skill`).
+2. Corré `node <skill-root>/bin/audit.js`.
+3. Emitir mensaje corto al user:
+   > Baseline sellado en `.doc-governance/map.md` (SHA `<sha>`, N docs mapeados).
+   > Commiteá: `git add .doc-governance/map.md && git commit -m "chore: seal doc-governance baseline"`
+   > Después re-invocáme para el flujo completo.
+4. **STOP**. No hay drift para reportar en un baseline recién sellado — ejecutar el flujo agentic completo acá sería caro y no aportaría valor.
+
+**Si "map exists"**: seguí con el flujo abajo.
+
+### Flujo steady-state
 
 1. **Corré el flujo manual completo**: inspeccionar cambios, decidir routing usando `## Document Routing By Type`, editar los docs impactados, emitir el bloque `Action Taken` / `Justification` / `Persisted Rule`.
 

@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.5.6] - 2026-07-19
+
+### Added
+- `## Activation Signals` en `SKILL.md` expandido con frases naturales de fin de sesión: "actualizá docs", "revisá docs", "chequeá docs impact", "update docs", etc. El skill ahora activa por intent en el 80% de los casos comunes sin necesidad de tipear el slash literal.
+- Cold-start guard en `SKILL.md` (`## Root Invocation Behavior`) para el path intent-activated (antes solo estaba en `commands/review.md` para el path slash). Ahora ambos paths ahorran tokens en la primera invocación por repo.
+
+### Changed
+- `## Root Invocation Behavior` de `SKILL.md` limpiado: sacado el preámbulo con topología de install desactualizada (era de la era pre-v0.5.4). El título ya no incluye el slash porque el flujo aplica tanto por slash como por intent.
+- `README.md` documenta la activación por lenguaje natural como feature diferencial del skill.
+
+## [0.5.5] - 2026-07-19
+
+### Fixed
+- Cold-start de `/doc-governance-skill:review` consumía ~7k-14k tokens de Claude para hacer un bootstrap que Node puede resolver solo (~50 tokens). El thin wrapper forzaba a Claude a leer `SKILL.md` completo y ejecutar el flujo agentic Root Invocation Behavior aunque no había drift para reportar (baseline recién sellado).
+
+### Changed
+- `commands/review.md` ahora tiene un **cold-start guard** al inicio: chequea si existe `.doc-governance/map.md` ANTES de leer `SKILL.md`. Si no existe: corre `bin/audit.js` (Node local), le dice al user que commitee y re-invoque, y hace STOP. Si existe: sigue con el flujo agentic normal.
+- Reducción de costo esperada en primera invocación por repo: ~10x (de ~10k a ~700 tokens).
+
 ## [0.5.4] - 2026-07-19
 
 ### Added

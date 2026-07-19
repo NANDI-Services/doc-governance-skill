@@ -24,6 +24,43 @@ Justification: API auth flow and deployment workflow changed.
 Persisted Rule: Updated security and operations doc routing guidance.
 ```
 
+## Usage Flow (Visual)
+
+Diagrama del recorrido completo desde `claude plugin install` hasta el uso continuo por cada cambio meaningful:
+
+![Usage flow diagram](./docs/usage-flow.svg)
+
+Cuatro fases codificadas por color:
+- **🔧 Instalación (azul)** — 2 comandos + reiniciar. Una vez por máquina.
+- **❄️ Cold-start (naranja)** — primera invocación en cada repo. Node hace el bootstrap del baseline (~700 tokens de agente vs. 10k+ del flujo agentic completo).
+- **🔁 Steady-state (verde)** — dos slashes literales por cada cambio: `:update` cheap (solo reporte) o `:review` full (interpret + edits + optional re-seal).
+- **🤖 Automatización (violeta)** — path paralelo sin agente: `bin/update.js` desde CI/git hook, exit 1 en Warnings bloquea PRs.
+
+## Zero-Friction Activation (natural language)
+
+No hace falta acordarse del slash. Al final de tu sesión, tirá una frase natural y el skill se activa solo:
+
+| Decís… | Claude activa |
+|--------|--------------|
+| "actualizá los docs" / "update docs" | ✅ Full review flow |
+| "revisá docs" / "chequeá docs" | ✅ Full review flow |
+| "chequeá qué docs cambiaron" | ✅ Full review flow |
+| "cerrá esta task revisando docs" | ✅ Full review flow |
+| "docs impact after this?" | ✅ Full review flow |
+| "actualizá docs después de estos cambios" | ✅ Full review flow |
+
+El skill está optimizado para matchear el lenguaje natural que un dev usa al final de una sesión de trabajo — no la sintaxis exacta de un comando. Los slashes literales (`/doc-governance-skill:review`, `:update`) siguen funcionando para invocación explícita, pero la ruta esperada por diseño es la conversacional.
+
+### Cuándo NO se activa (protección contra ruido)
+
+El skill IGNORA frases que no ameritan chequeo de drift:
+- "arreglá este typo"
+- "renombrá esta variable"
+- "formateá el archivo"
+- "limpiá comentarios"
+
+Si tocaste solo estética o cambios behavior-neutral, el skill no se dispara — no perdés tokens revisando cosas que no importan.
+
 ## What Problem This Solves
 Teams often over-update or under-update docs after implementation work. This skill gives agents a deterministic review flow to decide:
 - whether docs must change

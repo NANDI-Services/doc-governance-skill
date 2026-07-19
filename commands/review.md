@@ -6,9 +6,30 @@ allowed-tools: ["Bash", "Read", "Edit", "Grep", "Glob"]
 
 # Doc Governance — Review (root flow)
 
-Corré el flujo completo de gobierno de documentación: chequear drift, decidir qué docs actualizar, aplicar solo los cambios necesarios, y opcionalmente re-sellar el baseline.
+## Cold-start guard (ejecutá esto ANTES de nada)
 
-## Acción
+Verificá si existe `.doc-governance/map.md` en el repo actual:
+
+```bash
+test -f .doc-governance/map.md && echo "map exists" || echo "no map"
+```
+
+**Si "no map"**: es el bootstrap del baseline. NO leas `SKILL.md`. NO sigas con el flujo de review. Hacé exactamente esto:
+
+1. Ubicá el skill root con `SKILL_ROOT=$(find ~/.claude/plugins/cache/nandi-services/doc-governance-skill -name 'SKILL.md' -not -path '*/node_modules/*' | head -1 | xargs dirname)` (fallback a `~/.claude/skills/doc-governance-skill` o `.ai/skills/doc-governance-skill`).
+2. Corré: `node "$SKILL_ROOT/bin/audit.js"`
+3. Emitir al user, textual, en una sola respuesta corta:
+
+   > Baseline sellado en `.doc-governance/map.md` (SHA `<sha del output>`, N docs mapeados).
+   > Commiteá el archivo con:
+   > `git add .doc-governance/map.md && git commit -m "chore: seal doc-governance baseline"`
+   > Después re-invocá `/doc-governance-skill:review` para el flujo completo.
+
+4. **STOP.** No ejecutes los pasos 1-6 de abajo. No hay drift que reportar en un baseline recién sellado — sería trabajo agentic caro que no aporta valor.
+
+**Si "map exists"**: seguí con el flujo abajo.
+
+## Acción (steady-state, map ya existe)
 
 Leé el `SKILL.md` en la raíz del skill (`~/.claude/plugins/cache/nandi-services/doc-governance-skill/*/SKILL.md` cuando esté instalado como plugin) y seguí la sección `## Root Invocation Behavior`.
 

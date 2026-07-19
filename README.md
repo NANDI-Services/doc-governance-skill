@@ -12,7 +12,7 @@ Canonical skill ID: `doc-governance-skill`.
 claude plugin marketplace add NANDI-Services/doc-governance-skill
 claude plugin install doc-governance-skill@nandi-services
 ```
-   Registers both the plugin (`/doc-governance-skill`, `/doc-governance-skill:update`) and the skill from the same tree.
+   Registers the plugin. Adds two literal slashes in the palette: `/doc-governance-skill:review` (root flow) and `/doc-governance-skill:update` (drift check only). The root skill is also invocable by intent phrasing ("review docs impact", "corré doc-governance-skill").
 2. Run it after a meaningful repository change.
 3. Apply only the document updates routed by the skill.
 4. End with the required minimal output block.
@@ -55,9 +55,10 @@ Primary target:
 Also discoverable via skills.sh (`npx skills add ...`) as a skill-only install — see the Installation section for the trade-off.
 
 ## Repository Structure
-- `SKILL.md`: skill metadata and governance logic (skills.sh manifest; also auto-registered as the plugin's root skill `/doc-governance-skill`)
+- `SKILL.md`: skill metadata and governance logic (skills.sh manifest; also auto-loaded by the plugin loader as invocable-by-intent — not a literal palette slash from the plugin path)
 - `.claude-plugin/plugin.json`: Claude Code plugin manifest (v0.4+)
-- `commands/update.md`: update slash-command spec (`/doc-governance-skill:update`)
+- `commands/review.md`: root full-flow slash-command spec (`/doc-governance-skill:review`) — thin wrapper redirecting to `SKILL.md`
+- `commands/update.md`: drift-check slash-command spec (`/doc-governance-skill:update`)
 - `bin/audit.js`, `bin/update.js`, `bin/lib/scan.js`: zero-dependency Node runtime (audit + update modes)
 - `SECURITY.md`: security disclosure process and hardening policy
 - `CONTRIBUTING.md`: contribution expectations and validation baseline
@@ -91,10 +92,12 @@ Claude Code separates **catalog registration** from **plugin install** on purpos
 
 In this repo the marketplace has exactly one plugin, so the two steps look redundant. They're not: they're the same shape every Claude Code plugin uses. If you want a real one-liner and are OK giving up the literal `/doc-governance-skill:update` sub-slash, see the [skills.sh fallback](#skillssh-fallback) below.
 
-After install:
+After install, two literal slashes appear in the palette:
 
-- **Plugin** → the `/doc-governance-skill:update` sub-slash appears literally in the palette.
-- **Skill** → the root `SKILL.md` is auto-loaded as `/doc-governance-skill` (see [Claude Code plugin docs](https://code.claude.com/docs/en/plugins-reference#skills): a plugin whose root is a `SKILL.md` becomes a single-skill plugin automatically — no `skills` field in `plugin.json` needed). The agent also activates it by intent (audit, drift check, etc.).
+- **`/doc-governance-skill:review`** (from `commands/review.md`) → root flow: run drift check, decide which docs to update, apply minimal changes, offer to re-seal baseline.
+- **`/doc-governance-skill:update`** (from `commands/update.md`) → drift check only. Reports; does not edit.
+
+Both are namespaced as `<plugin>:<subcommand>` because commands files inside a plugin are always prefixed with the plugin name. There is no way to expose an unqualified `/doc-governance-skill` slash from within the plugin path — that only exists via the skills.sh install (`npx skills add ...`), which registers as a user-scope skill instead of a plugin. The root `SKILL.md` is still auto-loaded and remains invocable by intent phrasing ("review docs impact", "corré doc-governance-skill") in addition to the literal `:review` slash.
 
 ### Team bundling (optional)
 
@@ -181,10 +184,12 @@ Commit `.doc-governance/map.md` — it is the shared baseline for the update mod
 
 ## Slash-Commands
 
-Después del `claude plugin marketplace add` + `claude plugin install` quedan dos slashes literales en el menú:
+Después del `claude plugin marketplace add` + `claude plugin install` quedan **dos slashes literales** en la paleta:
 
-- **`/doc-governance-skill`** — Revisar cambios, decidir qué docs actualizar, y al final ofrece sellar un baseline nuevo (te pregunta antes de tocar nada). Empoderá al user, no lo reemplaza. Viene del `SKILL.md` de la raíz, auto-registrado por el plugin loader.
+- **`/doc-governance-skill:review`** — Flujo completo: revisar cambios, decidir qué docs actualizar, aplicar los cambios mínimos, y al final ofrece re-sellar el baseline (te pregunta antes de tocar nada). Viene de `commands/review.md`, que redirige al `SKILL.md` de la raíz. Empoderá al user, no lo reemplaza.
 - **`/doc-governance-skill:update`** — Chequeo directo de drift: qué docs mencionan código que cambió desde el último baseline. Solo reporta, no edita. Viene de `commands/update.md`.
+
+Ambos slashes están namespaceados como `<plugin>:<sub>` porque los archivos en `commands/` de un plugin siempre se prefijan con el nombre del plugin — no se puede exponer un `/doc-governance-skill` unqualified desde la ruta plugin. El root skill sigue siendo activable-por-intent en paralelo ("corré doc-governance-skill").
 
 **Automatización sin agente:** los scripts `bin/audit.js` y `bin/update.js` siguen siendo callable directo desde terminal, CI o git hooks — sin pasar por el agente ni por el slash.
 

@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.5.4] - 2026-07-19
+
+### Added
+- `commands/review.md` → registra el slash literal `/doc-governance-skill:review` para el root flow (audit + update + routing + optional re-seal). Ahora la paleta muestra los dos comandos explícitos: `:review` (flujo completo) y `:update` (drift check solo). Evita la colisión de nombres que rompió v0.5.2 renombrando el archivo — no `commands/doc-governance-skill.md` sino `commands/review.md`.
+
+### Changed
+- Docs corregidas: la limitación documentada en v0.5.3 ("no se pueden tener ambos slashes al mismo tiempo") era falsa. Se pueden tener los dos slashes literales, solo hay que evitar la colisión de nombre entre el commands file y el plugin. Trade-off entre plugin y skills.sh reformulado alrededor de este hecho.
+
+## [0.5.3] - 2026-07-19
+
+### Fixed
+- Revertir el intento de v0.5.2 de restaurar `commands/doc-governance-skill.md`: los archivos en `commands/` de un plugin son SIEMPRE namespaceados como `<plugin>:<filename>`, así que el archivo producía `/doc-governance-skill:doc-governance-skill` (colisión de nombres) en vez del slash unqualified que queríamos. No hay forma dentro de la ruta plugin de exponer un slash literal `/doc-governance-skill` — es diseño del CLI de Claude Code.
+
+### Changed
+- Documentación honesta del trade-off entre las dos rutas de distribución:
+  - **Plugin path** (`claude plugin install`): expone `/doc-governance-skill:update` como slash literal; el root skill (SKILL.md) activa por intent, no aparece en la paleta como slash.
+  - **skills.sh path** (`npx skills add`): expone `/doc-governance-skill` como slash literal (installed as user-scope skill); el sub-modo `update` no aparece como slash, activa por intent.
+  - Elegir según prioridad: sub-slash literal para drift check → plugin; slash raíz literal → skills.sh; ambos slashes literales al mismo tiempo → no es posible con la arquitectura actual del CLI.
+
 ## [0.5.2] - 2026-07-19
 
 ### Fixed

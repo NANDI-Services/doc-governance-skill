@@ -30,11 +30,13 @@ claude plugin install doc-governance-skill@nandi-services
 
 Once installed, the same tree exposes both surfaces because a Claude Code plugin with a `SKILL.md` at the root, no `skills/` subdirectory, and no `skills` manifest field is auto-loaded as a single-skill plugin (Claude Code v2.1.142+, [plugins reference](https://code.claude.com/docs/en/plugins-reference#skills)). Result after install:
 
-- `/doc-governance-skill` → literal slash from `commands/doc-governance-skill.md` (thin wrapper that redirects to `SKILL.md`'s `## Root Invocation Behavior`).
-- `/doc-governance-skill:update` → literal sub-slash from `commands/update.md`.
-- Root `SKILL.md` is also auto-loaded as invocable-by-intent (agent picks it when task context matches its `description`), but that auto-load does **not** create a `/plugin-name` slash in the palette — only files under `commands/` create literal slashes. Discovered end-to-end in v0.5.2 after v0.4.0 removed `commands/doc-governance-skill.md` on the incorrect assumption that the auto-load covered it.
+- `/doc-governance-skill:review` → literal sub-slash from `commands/review.md`. Thin wrapper for the root full-flow (audit + update + routing + optional re-seal).
+- `/doc-governance-skill:update` → literal sub-slash from `commands/update.md`. Drift check only.
+- Root `SKILL.md` is also auto-loaded and remains invocable by intent phrasing ("review docs impact", "corré doc-governance-skill") in addition to the literal `:review` slash — same code path.
+- **Do NOT name a commands file after the plugin itself.** Files under `commands/<x>.md` in a plugin ALWAYS produce namespaced `/<plugin>:<x>` slashes. A `commands/doc-governance-skill.md` produces the ugly collision `/doc-governance-skill:doc-governance-skill` (verified end-to-end in v0.5.2 → reverted). Choose semantic names for sub-commands (`review.md`, `update.md`, etc.).
+- **There is no way to expose an unqualified `/doc-governance-skill` slash from the plugin path** — that slash only exists via the skills.sh install (`npx skills add ...`), which registers as a user-scope skill. The plugin path gives namespaced sub-slashes; skills.sh gives the unqualified slash.
 
-The canonical behavior spec is still `SKILL.md`. `commands/doc-governance-skill.md` is a thin pointer whose only job is to expose the root slash. Do not duplicate the `## Root Invocation Behavior` content in the commands file — keep it as a redirect.
+The canonical behavior spec is `SKILL.md`. Both `commands/review.md` and the intent path read the SKILL.md's `## Root Invocation Behavior` — no duplication.
 
 Fallback distribution: `npx skills add NANDI-Services/doc-governance-skill` still works and keeps the skills.sh leaderboard alive, but registers only the skill (no literal sub-slash). Document it as a fallback, not the recommended path.
 

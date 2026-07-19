@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.5.7] - 2026-07-19
+
+- fix: update actions/checkout version to a specific commit for stability
+
 ## [0.5.6] - 2026-07-19
 
 ### Added

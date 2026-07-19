@@ -7,11 +7,12 @@ Installable documentation-governance skill for the skills.sh ecosystem.
 Canonical skill ID: `doc-governance-skill`.
 
 ## Quick Start
-1. Install with one command:
+1. Install (add the marketplace, then install the plugin):
 ```bash
-claude plugin install NANDI-Services/doc-governance-skill
+claude plugin marketplace add NANDI-Services/doc-governance-skill
+claude plugin install doc-governance-skill@nandi-services
 ```
-   Registers both the plugin (`/doc-governance-skill`, `/doc-governance-skill:update`) and the skill in a single step.
+   Registers both the plugin (`/doc-governance-skill`, `/doc-governance-skill:update`) and the skill from the same tree.
 2. Run it after a meaningful repository change.
 3. Apply only the document updates routed by the skill.
 4. End with the required minimal output block.
@@ -71,13 +72,16 @@ Also discoverable via skills.sh (`npx skills add ...`) as a skill-only install �
 
 ## Installation
 
-### One canonical command
+### Canonical: add the marketplace, then install
 
 ```bash
-claude plugin install NANDI-Services/doc-governance-skill
+claude plugin marketplace add NANDI-Services/doc-governance-skill
+claude plugin install doc-governance-skill@nandi-services
 ```
 
-That's it. One install registers **both** the plugin and the skill:
+Two commands, one flow. Claude Code's [plugin install CLI](https://code.claude.com/docs/en/plugins-reference#plugin-install) resolves plugin names from configured marketplaces — a bare `owner/repo` reference is never accepted. This repo publishes its own single-plugin marketplace (`.claude-plugin/marketplace.json`, named `nandi-services`) so both steps target the same tree.
+
+After install:
 
 - **Plugin** → the `/doc-governance-skill:update` sub-slash appears literally in the palette.
 - **Skill** → the root `SKILL.md` is auto-loaded as `/doc-governance-skill` (see [Claude Code plugin docs](https://code.claude.com/docs/en/plugins-reference#skills): a plugin whose root is a `SKILL.md` becomes a single-skill plugin automatically — no `skills` field in `plugin.json` needed). The agent also activates it by intent (audit, drift check, etc.).
@@ -167,7 +171,7 @@ Commit `.doc-governance/map.md` — it is the shared baseline for the update mod
 
 ## Slash-Commands
 
-Con `claude plugin install NANDI-Services/doc-governance-skill` quedan dos slashes literales en el menú:
+Después del `claude plugin marketplace add` + `claude plugin install` quedan dos slashes literales en el menú:
 
 - **`/doc-governance-skill`** — Revisar cambios, decidir qué docs actualizar, y al final ofrece sellar un baseline nuevo (te pregunta antes de tocar nada). Empoderá al user, no lo reemplaza. Viene del `SKILL.md` de la raíz, auto-registrado por el plugin loader.
 - **`/doc-governance-skill:update`** — Chequeo directo de drift: qué docs mencionan código que cambió desde el último baseline. Solo reporta, no edita. Viene de `commands/update.md`.
@@ -249,11 +253,9 @@ grep -n '^description:' SKILL.md
 
 ### 2. Validate Discovery From GitHub
 ```bash
-# Plugin path (canonical)
-claude plugin install NANDI-Services/doc-governance-skill --dry-run 2>/dev/null || \
-  echo "Fallback: verify manifest is valid JSON" && \
-  node -e "JSON.parse(require('fs').readFileSync('.claude-plugin/plugin.json','utf8'))" && \
-  echo OK
+# Plugin path (canonical) — verify both manifests are valid JSON
+node -e "JSON.parse(require('fs').readFileSync('.claude-plugin/plugin.json','utf8'))" && echo "plugin.json OK"
+node -e "JSON.parse(require('fs').readFileSync('.claude-plugin/marketplace.json','utf8'))" && echo "marketplace.json OK"
 
 # skills.sh path (fallback)
 npx skills add NANDI-Services/doc-governance-skill --list
@@ -292,4 +294,5 @@ This repository is released under the MIT License. See `LICENSE`.
 ## Lessons Learned
 
 - [2026-07-18] Skills.sh listing is telemetry-driven; only `npx skills add` triggers indexing.
-- [2026-07-18] A Claude Code plugin whose root is a `SKILL.md` (with no `skills/` dir and no `skills` manifest field) is auto-loaded as a single-skill plugin. Result: `claude plugin install` is a single command that registers both the plugin's literal sub-slashes (from `commands/*.md`) and the skill (from root `SKILL.md`). No duplicate root command file required.
+- [2026-07-18] A Claude Code plugin whose root is a `SKILL.md` (with no `skills/` dir and no `skills` manifest field) is auto-loaded as a single-skill plugin. Result: after `claude plugin install` the plugin's literal sub-slashes (from `commands/*.md`) and the auto-registered root skill (from `SKILL.md`) both appear. No duplicate root command file required.
+- [2026-07-18] `claude plugin install <owner>/<repo>` **never worked** — the CLI resolves plugin names from configured marketplaces only, per the [official reference](https://code.claude.com/docs/en/plugins-reference#plugin-install). The install flow is two steps: `claude plugin marketplace add <owner>/<repo>` (requires `.claude-plugin/marketplace.json` in the repo) then `claude plugin install <plugin-name>@<marketplace-name>`. v0.5 ships a self-referencing `marketplace.json` (`name: nandi-services`) so this repo is really installable.

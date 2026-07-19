@@ -1,0 +1,14 @@
+{
+  "name": "nandi-services",
+  "owner": {
+    "name": "NANDI Services",
+    "email": "contact@nandi.com.ar"
+  },
+  "plugins": [
+    {
+      "name": "doc-governance-skill",
+      "source": "./",
+      "description": "Decide doc-impact after meaningful code, config, CI/CD, security, architecture, API, or workflow changes. Routes updates to the right doc; ignores cosmetic changes."
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 ---
 name: doc-governance-skill
 description: Decide doc-impact after meaningful code, config, CI/CD, security, architecture, API, or workflow changes, route updates to the right files, and avoid activation for cosmetic-only or behavior-neutral edits.
-version: 0.4.0
+version: 0.5.0
 ---
 
 # Repo Doc Governance
@@ -156,10 +156,10 @@ To seal a baseline explicitly (larger repos, CI-driven bootstrap), run `audit.js
 
 ## Root Invocation Behavior (`/doc-governance-skill`)
 
-Este repo se instala con un solo comando (`claude plugin install NANDI-Services/doc-governance-skill`), que registra plugin y skill a la vez desde el mismo árbol. También existe una ruta fallback vía skills.sh (`npx skills add ...`) que registra solo el skill.
+Este repo se instala en dos pasos (`claude plugin marketplace add NANDI-Services/doc-governance-skill` + `claude plugin install doc-governance-skill@nandi-services`), que registran plugin y skill desde el mismo árbol. También existe una ruta fallback vía skills.sh (`npx skills add ...`) que registra solo el skill.
 
 **Cómo se ve en el menú según cómo esté instalada:**
-- **Vía `claude plugin install` (recomendado)** → aparecen 2 slashes literales:
+- **Vía `claude plugin marketplace add` + `install` (recomendado)** → aparecen 2 slashes literales:
   - `/doc-governance-skill` (root, este flujo) — el plugin loader auto-registra el `SKILL.md` de la raíz como single-skill del plugin (docs oficiales: sin `skills/` dir y sin campo `skills` en el manifest, el root SKILL.md se carga automáticamente).
   - `/doc-governance-skill:update` (chequeo de drift directo) — viene de `commands/update.md`.
 - **Vía `npx skills add` (fallback skills.sh)** → aparece 1 slash literal:

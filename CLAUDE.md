@@ -19,15 +19,16 @@ Shared scanner: `bin/lib/scan.js` (heading + backtick-path + fenced `path=` extr
 
 `install.sh` (bash) and `install.ps1` (PowerShell) copy `SKILL.md`, `templates/`, `bin/`, `commands/` (guarded), and `.claude-plugin/` (guarded) into `<repo>/.ai/skills/doc-governance-skill/`, then insert the block from `templates/AGENTS.append.md` into the consumer's `AGENTS.md` between `<!-- repo-doc-governance:start -->` / `:end` markers. Both must stay idempotent. `uninstall.sh` reverses.
 
-## Dual Distribution (one install, both surfaces)
+## Dual Distribution (two-step install, both surfaces)
 
-The canonical install is a single command:
+The canonical install is `marketplace add` + `install` — Claude Code's `plugin install` CLI resolves plugin names from configured marketplaces only, never from a bare `owner/repo` reference ([plugins-reference](https://code.claude.com/docs/en/plugins-reference#plugin-install)). This repo publishes `.claude-plugin/marketplace.json` (`name: nandi-services`) so both commands target the same tree:
 
 ```bash
-claude plugin install NANDI-Services/doc-governance-skill
+claude plugin marketplace add NANDI-Services/doc-governance-skill
+claude plugin install doc-governance-skill@nandi-services
 ```
 
-This registers **both** the plugin and the skill from the same tree, because a Claude Code plugin with a `SKILL.md` at the root, no `skills/` subdirectory, and no `skills` manifest field is auto-loaded as a single-skill plugin (Claude Code v2.1.142+, [plugins reference](https://code.claude.com/docs/en/plugins-reference#skills)). Result after install:
+Once installed, the same tree exposes both surfaces because a Claude Code plugin with a `SKILL.md` at the root, no `skills/` subdirectory, and no `skills` manifest field is auto-loaded as a single-skill plugin (Claude Code v2.1.142+, [plugins reference](https://code.claude.com/docs/en/plugins-reference#skills)). Result after install:
 
 - `/doc-governance-skill` → auto-registered from root `SKILL.md` (skill invocation name comes from `name:` frontmatter).
 - `/doc-governance-skill:update` → literal sub-slash from `commands/update.md`.
@@ -65,4 +66,4 @@ If `SKILL.md`'s manually-pinned `version:` is higher than the auto-bump, the pin
 
 ## Skills.sh Publishing (fallback path)
 
-Discovery on skills.sh is telemetry-driven: only `npx skills add <owner>/doc-governance-skill` fires the indexing event. Search/leaderboard visibility follows install counts, not manual registration. Since v0.5 the canonical README install is `claude plugin install` (unifies plugin + skill in one command), so skills.sh installs come from users who arrive via the leaderboard — the README lists `npx skills add` as a documented fallback. Do not add "register on skills.sh" steps.
+Discovery on skills.sh is telemetry-driven: only `npx skills add <owner>/doc-governance-skill` fires the indexing event. Search/leaderboard visibility follows install counts, not manual registration. Since v0.5 the canonical README install is the two-step `claude plugin marketplace add` + `claude plugin install <name>@nandi-services` (fixes the bogus one-liner from v0.4 that never worked), so skills.sh installs come from users who arrive via the leaderboard — the README lists `npx skills add` as a documented fallback. Do not add "register on skills.sh" steps.

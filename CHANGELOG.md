@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0] - 2026-07-18
+
+### Fixed
+- `claude plugin install NANDI-Services/doc-governance-skill` (the "canonical" one-liner introduced in v0.4.0) never worked. Claude Code's [`plugin install` CLI](https://code.claude.com/docs/en/plugins-reference#plugin-install) only resolves plugin names against configured marketplaces — a bare `owner/repo` reference is never accepted. The real install is a two-step flow: `claude plugin marketplace add <owner>/<repo>` (requires `.claude-plugin/marketplace.json` in the repo) then `claude plugin install <plugin>@<marketplace>`.
+
+### Added
+- `.claude-plugin/marketplace.json`: self-referencing single-plugin marketplace named `nandi-services`, with one entry (`doc-governance-skill`, `source: "./"`) pointing at the same tree. Makes `claude plugin marketplace add NANDI-Services/doc-governance-skill` actually succeed against this repo.
+
+### Changed
+- `README.md`: Quick Start, Installation, ES palette paragraph, Validate Discovery, and Lessons Learned all rewritten around the two-step install (`marketplace add` then `install doc-governance-skill@nandi-services`).
+- `CLAUDE.md` Dual Distribution section retitled "two-step install, both surfaces"; keeps the auto-register mechanism intact (Claude Code v2.1.142+ still auto-loads root `SKILL.md` as a single-skill plugin after install).
+- `SKILL.md` Root Invocation Behavior updated so the agent no longer instructs users to run the broken one-liner.
+
 ## [0.4.0] - 2026-07-18
 
 ### Changed

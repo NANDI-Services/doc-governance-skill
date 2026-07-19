@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.5.1] - 2026-07-19
+
+- docs: clarify the two-step installation process and its purpose in README.md
+
 ## [0.5.0] - 2026-07-18
 
 ### Fixed

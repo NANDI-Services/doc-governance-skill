@@ -5,8 +5,8 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { scanRepo, renderMap } = require('./lib/scan');
+const { classifyFileDiff } = require('./lib/diff-classify');
 
-// ponytail: bootstrapped map is tagged so audit re-seals get a clean provenance.
 const BOOTSTRAP_TOOL_VERSION = 'update-bootstrap';
 
 function findRepoRoot() {
@@ -82,21 +82,44 @@ function readStdinSync() {
   }
 }
 
-function getChangedFiles({ args, sealedSha, root }) {
-  if (args.files) return args.files;
+// Returns [{ status, path, oldPath? }]. status: M | A | D | R | C | T.
+function getChangedEntries({ args, sealedSha, root }) {
+  if (args.files) {
+    return args.files.map(p => ({ status: 'M', path: p }));
+  }
   const stdinFiles = readStdinSync();
-  if (stdinFiles) return stdinFiles;
+  if (stdinFiles) {
+    return stdinFiles.map(p => ({ status: 'M', path: p }));
+  }
   const baseRef = args.since || sealedSha || 'HEAD';
   if (!isSafeGitRef(baseRef)) {
-    throw new Error(`unsafe git ref: ${baseRef}`);
+    throw new Error('unsafe git ref: ' + baseRef);
   }
-  // `git diff <ref>` covers both committed and uncommitted changes between ref and working tree.
+  let out;
   try {
-    const out = execFileSync('git', ['diff', '--name-only', baseRef], { cwd: root, encoding: 'utf8' });
-    return out.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    out = execFileSync(
+      'git',
+      ['diff', '--name-status', '--find-renames', baseRef],
+      { cwd: root, encoding: 'utf8' }
+    );
   } catch {
     return [];
   }
+  const entries = [];
+  for (const raw of out.split(/\r?\n/)) {
+    if (!raw.trim()) continue;
+    const parts = raw.split('\t');
+    const rawStatus = parts[0] || '';
+    const statusLetter = rawStatus[0];
+    if (statusLetter === 'R' || statusLetter === 'C') {
+      if (parts.length >= 3) {
+        entries.push({ status: statusLetter, oldPath: parts[1], path: parts[2] });
+      }
+    } else if (parts.length >= 2) {
+      entries.push({ status: statusLetter, path: parts[1] });
+    }
+  }
+  return entries;
 }
 
 function pathsMatch(codeRef, changed) {
@@ -108,58 +131,146 @@ function pathsMatch(codeRef, changed) {
   return false;
 }
 
-function classifyChanged(changedFiles) {
-  const code = [];
-  const md = [];
-  for (const f of changedFiles) {
-    if (f.startsWith('.doc-governance/')) continue;
-    if (/\.md$/i.test(f)) md.push(f);
-    else code.push(f);
+function classifyEntries(entries) {
+  const codeChanged = [];
+  const mdChanged = [];
+  const renames = [];
+  for (const e of entries) {
+    if (e.path.startsWith('.doc-governance/')) continue;
+    if (e.status === 'R' || e.status === 'C') {
+      renames.push({ oldPath: e.oldPath, newPath: e.path });
+      continue;
+    }
+    if (/\.md$/i.test(e.path)) {
+      mdChanged.push(e.path);
+      continue;
+    }
+    codeChanged.push({ path: e.path, status: e.status });
   }
-  return { code, md };
+  return { codeChanged, mdChanged, renames };
 }
 
-function renderReport({ map, args, changedFiles, mdChanged, affected, autoBootstrapped }) {
+function buildChangesByFile({ codeChanged, mapDocs, root, sealedSha }) {
+  const changes = [];
+  for (const c of codeChanged) {
+    const affectedDocs = [];
+    for (const doc of mapDocs) {
+      if (!doc.codeRefs.length) continue;
+      if (doc.codeRefs.some(ref => pathsMatch(ref, c.path))) {
+        affectedDocs.push(doc.path);
+      }
+    }
+    if (affectedDocs.length === 0) continue;
+    let cls;
+    if (c.status === 'A' || c.status === 'D' || !sealedSha) {
+      cls = { kind: 'substantive', sample: [] };
+    } else {
+      cls = classifyFileDiff({ root, sha: sealedSha, filePath: c.path });
+    }
+    changes.push({
+      path: c.path,
+      status: c.status,
+      kind: cls.kind,
+      sample: cls.sample,
+      affectedDocs,
+    });
+  }
+  return changes;
+}
+
+function classifyRenamesAgainstDocs(renames, mapDocs) {
+  return renames.map(r => {
+    const affectedDocs = [];
+    for (const doc of mapDocs) {
+      if (!doc.codeRefs.length) continue;
+      if (doc.codeRefs.some(ref => pathsMatch(ref, r.oldPath))) {
+        affectedDocs.push(doc.path);
+      }
+    }
+    return { oldPath: r.oldPath, newPath: r.newPath, affectedDocs };
+  });
+}
+
+function renderReport(opts) {
+  const { map, args, entries, changesByFile, mdChanged, renamesReport, autoBootstrapped } = opts;
   const range = args.files
     ? '(--files)'
     : args.since
-    ? `${args.since}..worktree`
-    : (map.sealedSha ? `${map.sealedSha}..worktree` : '(no-baseline)');
+    ? args.since + '..worktree'
+    : (map.sealedSha ? map.sealedSha + '..worktree' : '(no-baseline)');
 
-  const critical = 0;
-  const warnings = affected.length;
-  const info = (mdChanged.length > 0 ? 1 : 0) + (autoBootstrapped ? 1 : 0);
+  const warnings = changesByFile.filter(c => c.kind === 'substantive');
+  const trivials = changesByFile.filter(c => c.kind !== 'substantive');
+  const criticalCount = 0;
+  const warningCount = warnings.length;
+  const infoCount =
+    trivials.length +
+    renamesReport.length +
+    (mdChanged.length > 0 ? 1 : 0) +
+    (autoBootstrapped ? 1 : 0);
+
+  const docsAffected = new Set();
+  for (const c of changesByFile) for (const d of c.affectedDocs) docsAffected.add(d);
 
   const lines = [];
   lines.push('DOC_GOVERNANCE_UPDATE:');
   lines.push('');
-  lines.push(`sealed_sha: ${map.sealedSha || '(none)'}`);
-  lines.push(`diff_range: ${range}`);
-  lines.push(`files_changed: ${changedFiles.length}`);
-  lines.push(`docs_affected: ${affected.length}`);
+  lines.push('sealed_sha: ' + (map.sealedSha || '(none)'));
+  lines.push('diff_range: ' + range);
+  lines.push('files_changed: ' + entries.length);
+  lines.push('docs_affected: ' + docsAffected.size);
   lines.push('');
-  lines.push(`CRITICAL (${critical}):`);
+
+  lines.push('CRITICAL (' + criticalCount + '):');
   lines.push('');
-  lines.push(`WARNING (${warnings}):`);
-  for (const a of affected) {
-    lines.push(`  - doc: ${a.doc}`);
-    lines.push(`    referenced_code_changed: [${a.refs.join(', ')}]`);
-    lines.push(`    reason: doc references code that changed since baseline`);
-    lines.push(`    suggested_action: review sections in ${a.doc} that mention changed paths`);
+
+  lines.push('WARNING (' + warningCount + '):');
+  for (const c of warnings) {
+    lines.push('  - code_file: ' + c.path + ' (kind: substantive)');
+    lines.push('    affected_docs: [' + c.affectedDocs.join(', ') + ']');
+    if (c.sample.length) {
+      lines.push('    diff_sample:');
+      for (const s of c.sample) lines.push('      ' + s);
+    }
+    lines.push('    reason: doc references code that changed since baseline');
+    lines.push('    suggested_action: review sections in affected_docs that mention ' + c.path);
   }
+
   lines.push('');
-  lines.push(`INFO (${info}):`);
+  lines.push('INFO (' + infoCount + '):');
   if (autoBootstrapped) {
-    lines.push(`  - baseline_auto_sealed: first run, sealed to ${map.sealedSha || '(no-git)'}`);
-    lines.push(`    suggested_action: commit .doc-governance/map.md to persist the baseline`);
+    lines.push('  - baseline_auto_sealed: first run, sealed to ' + (map.sealedSha || '(no-git)'));
+    lines.push('    suggested_action: commit .doc-governance/map.md to persist the baseline');
+  }
+  for (const c of trivials) {
+    lines.push('  - trivial_change: ' + c.path + ' (kind: ' + c.kind + ')');
+    const docs = c.affectedDocs;
+    const summary = docs.length <= 3
+      ? '[' + docs.join(', ') + ']'
+      : '[' + docs.slice(0, 3).join(', ') + ', ... (' + docs.length + ' total)]';
+    lines.push('    affected_docs_if_substantive: ' + summary);
+    const kindLabel = c.kind === 'whitespace-only' ? 'whitespace' : 'comment';
+    lines.push('    reason: only ' + kindLabel + ' lines changed; docs referencing this path are unlikely to be impacted');
+    lines.push('    suggested_action: none unless the ' + kindLabel + ' carried semantic guidance');
+  }
+  for (const r of renamesReport) {
+    lines.push('  - renamed: ' + r.oldPath + ' -> ' + r.newPath);
+    if (r.affectedDocs.length) {
+      lines.push('    affects: [' + r.affectedDocs.join(', ') + ']');
+      lines.push('    suggested_action: update references in affected docs; consider re-audit to refresh baseline path');
+    } else {
+      lines.push('    affects: []');
+      lines.push('    suggested_action: none; no mapped doc references the old path');
+    }
   }
   if (mdChanged.length > 0) {
-    lines.push(`  - map_staleness: ${mdChanged.length} .md file(s) changed since sealed_sha, map may not reflect current structure`);
-    lines.push(`    suggested_action: run audit to re-seal`);
+    lines.push('  - map_staleness: ' + mdChanged.length + ' .md file(s) changed since sealed_sha, map may not reflect current structure');
+    lines.push('    suggested_action: run audit to re-seal');
   }
+
   lines.push('');
-  lines.push(`SUMMARY: ${critical} critical, ${warnings} warnings, ${info} info`);
-  return lines.join('\n');
+  lines.push('SUMMARY: ' + criticalCount + ' critical, ' + warningCount + ' warnings, ' + infoCount + ' info');
+  return { text: lines.join('\n'), warningCount };
 }
 
 function bootstrapMap(root, mapPath) {
@@ -190,25 +301,29 @@ function main() {
   }
   const args = parseArgs(process.argv.slice(2));
   const map = parseMap(fs.readFileSync(mapPath, 'utf8'));
-  const changedFiles = getChangedFiles({ args, sealedSha: map.sealedSha, root });
-  const { code: codeChanged, md: mdChanged } = classifyChanged(changedFiles);
 
-  const affected = [];
-  for (const doc of map.docs) {
-    if (!doc.codeRefs.length) continue;
-    const matches = doc.codeRefs.filter(ref => codeChanged.some(c => pathsMatch(ref, c)));
-    if (matches.length) affected.push({ doc: doc.path, refs: matches });
-  }
+  const entries = getChangedEntries({ args, sealedSha: map.sealedSha, root });
+  const { codeChanged, mdChanged, renames } = classifyEntries(entries);
 
-  const report = renderReport({ map, args, changedFiles, mdChanged, affected, autoBootstrapped });
-  console.log(report);
+  const changesByFile = buildChangesByFile({
+    codeChanged,
+    mapDocs: map.docs,
+    root,
+    sealedSha: map.sealedSha,
+  });
+  const renamesReport = classifyRenamesAgainstDocs(renames, map.docs);
 
-  process.exit(affected.length > 0 ? 1 : 0);
+  const rendered = renderReport({
+    map, args, entries, changesByFile, mdChanged, renamesReport, autoBootstrapped,
+  });
+  console.log(rendered.text);
+
+  process.exit(rendered.warningCount > 0 ? 1 : 0);
 }
 
 try {
   main();
 } catch (err) {
-  console.error(`[doc-governance-update] ${err.message}`);
+  console.error('[doc-governance-update] ' + err.message);
   process.exit(1);
 }

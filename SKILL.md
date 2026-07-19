@@ -1,7 +1,7 @@
 ---
 name: doc-governance-skill
 description: Decide doc-impact after meaningful code, config, CI/CD, security, architecture, API, or workflow changes, route updates to the right files, and avoid activation for cosmetic-only or behavior-neutral edits.
-version: 0.5.7
+version: 0.6.0
 ---
 
 # Repo Doc Governance
@@ -225,8 +225,23 @@ test -f .doc-governance/map.md && echo "map exists" || echo "no map"
 Regla de oro: la skill empodera al user, no lo reemplaza. Nunca correr audit sin confirmación explícita en esta ruta.
 
 ## Drift Categories Monitored
+
 | Severity | Trigger | Suggested Action |
 |---|---|---|
-| Critical | Reserved for v0.3+ (semantic mismatch between doc and code signature) | Not emitted in v0.2. |
-| Warning | Code path referenced by a doc changed since the sealed SHA | Review the doc sections that mention the changed path; update or confirm still accurate. |
-| Info | `.md` files changed since the sealed SHA (map may be stale) | Re-run audit mode to re-seal the baseline. |
+| Critical | Reserved (future: semantic mismatch, anchor removed, deleted-file referenced) | Not emitted yet. |
+| Warning | Code path referenced by a doc changed **substantively** since the sealed SHA. One entry per changed code file (not per doc), with `affected_docs:` and a 2-3 line `diff_sample:`. | Review the doc sections listed in `affected_docs:` that mention the changed path; update or confirm still accurate. |
+| Info | Trivial change (whitespace-only or comment-only) on a referenced path; rename detected (`renamed: A -> B`); `.md` files changed since sealed SHA (map may be stale); auto-bootstrapped baseline. | Depends on subtype — see `suggested_action:` on each entry. |
+
+Exit code: `1` only when there is at least one WARNING. INFO alone returns `0` — it is informational, not blocking.
+
+## Trivial-Change Suppression
+
+To keep the signal-to-noise ratio high, `bin/update.js` inspects each changed code file with `git diff --unified=3` and classifies it before deciding severity:
+
+- **`whitespace-only`** — added and removed lines are identical after normalizing whitespace. Downgraded to INFO.
+- **`comment-only`** — every added and removed line matches a known comment pattern for the file's extension (e.g. `//` for `.js/.ts/.prisma`, `#` for `.py/.yml`, `<!-- -->` for `.html`, `--` for `.sql`). Downgraded to INFO.
+- **`substantive`** — anything else, including any mix of code + comment changes. Emitted as WARNING.
+
+Unknown extensions default to `substantive` (safer to over-warn than under-warn on a language the classifier does not know). If your repo uses a language not yet covered, add its comment regex to `bin/lib/diff-classify.js` (`COMMENT_PATTERNS_BY_EXT`).
+
+The classifier only downgrades — it never upgrades. A missed classification is a WARNING, not silent suppression.

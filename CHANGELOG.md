@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.6.0] - 2026-07-19
+
+### Added
+- **Diff-aware classifier** (`bin/lib/diff-classify.js`): each changed code file is inspected with `git diff --unified=3` and classified as `whitespace-only`, `comment-only`, or `substantive`. Trivial changes are downgraded from WARNING to INFO so cosmetic edits (comment tweaks, indentation, `sed` rename over comments) no longer flood the report. Comment regexes seeded for `.js/.ts/.jsx/.tsx/.py/.rb/.sh/.yml/.prisma/.go/.rs/.java/.cs/.html/.sql/.css/…` and family.
+- **Root-cause grouping**: WARNING output is now keyed by code file (`code_file: X`, `affected_docs: [d1, d2, …]`) instead of by doc. One `sed` on a shared file produces one entry, not N.
+- **Inline diff samples**: each substantive WARNING carries a 2-3 line `diff_sample:` block with the actual `+`/`-` lines that triggered it, so the operator can decide without a context switch.
+- **Rename detection**: uses `git diff --name-status --find-renames`. Renamed files are reported as INFO (`renamed: A -> B`, with `affects: [...]`) instead of firing a spurious WARNING for the deleted path.
+- **Self-test** for the classifier: `node bin/lib/diff-classify.self-test.js` — no frameworks, inline fixtures.
+
+### Changed
+- **Exit code semantics**: `update.js` now returns 1 only when there are substantive WARNINGs. Trivial (comment/whitespace-only), renames, auto-bootstrap and map-staleness are INFO and return 0 — informational, non-blocking.
+- **Report shape**: WARNING entries use `code_file` / `affected_docs` / `diff_sample` (not `doc` / `referenced_code_changed`). CRITICAL still reserved for a future anchor-removal signal.
+
+### Deferred to a future release
+- Rename-only classifier (detect `sed` A→B applied to N lines of real code).
+- Anchor-level report (`X.md:42-58 (section: ## …)`).
+- Distinguishing markdown links `](path)` from prose backticks in `extractCodeRefs`.
+- Auto-suggest reseal when `map_staleness >= 3`.
+- `--include-trivial` flag to escalate INFO trivial back to WARNING.
+
 ## [0.5.7] - 2026-07-19
 
 - fix: update actions/checkout version to a specific commit for stability

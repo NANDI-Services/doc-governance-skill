@@ -1,9 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 
+// ponytail: exclude third-party skill/plugin drops and auto-gen dirs. Their
+// SKILL.md/README.md describe upstream tools, not the host repo — matching them
+// as affected_docs produces 100% false-positives. Config-file override tracked
+// in ROADMAP Deferred Backlog if someone actually curates .claude/.agents.
 const EXCLUDE_DIRS = new Set([
   '.git', 'node_modules', 'dist', 'build', '.next', 'target',
-  'vendor', '.venv', 'venv', '.doc-governance', '.ai'
+  'vendor', '.venv', 'venv', '.doc-governance', '.ai',
+  '.agents', '.claude', 'graphify-out'
 ]);
 
 function isPathLike(s) {

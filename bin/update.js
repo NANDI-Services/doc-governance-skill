@@ -150,17 +150,19 @@ function classifyEntries(entries) {
   return { codeChanged, mdChanged, renames };
 }
 
-function buildChangesByFile({ codeChanged, mapDocs, root, sealedSha }) {
+function buildChangesByFile({ codeChanged, mapDocs, root, sealedSha, mdChangedSet }) {
   const changes = [];
   for (const c of codeChanged) {
-    const affectedDocs = [];
+    const unsyncedDocs = [];
+    const alreadyTouchedDocs = [];
     for (const doc of mapDocs) {
       if (!doc.codeRefs.length) continue;
       if (doc.codeRefs.some(ref => pathsMatch(ref, c.path))) {
-        affectedDocs.push(doc.path);
+        if (mdChangedSet && mdChangedSet.has(doc.path)) alreadyTouchedDocs.push(doc.path);
+        else unsyncedDocs.push(doc.path);
       }
     }
-    if (affectedDocs.length === 0) continue;
+    if (unsyncedDocs.length === 0 && alreadyTouchedDocs.length === 0) continue;
     let cls;
     if (c.status === 'A' || c.status === 'D' || !sealedSha) {
       cls = { kind: 'substantive', sample: [] };
@@ -172,7 +174,8 @@ function buildChangesByFile({ codeChanged, mapDocs, root, sealedSha }) {
       status: c.status,
       kind: cls.kind,
       sample: cls.sample,
-      affectedDocs,
+      unsyncedDocs,
+      alreadyTouchedDocs,
     });
   }
   return changes;
@@ -199,18 +202,25 @@ function renderReport(opts) {
     ? args.since + '..worktree'
     : (map.sealedSha ? map.sealedSha + '..worktree' : '(no-baseline)');
 
-  const warnings = changesByFile.filter(c => c.kind === 'substantive');
+  // ponytail: substantive with unsyncedDocs=0 means every affected doc was
+  // edited in the same diff-range — downgrade to INFO instead of firing a FP.
+  const warnings = changesByFile.filter(c => c.kind === 'substantive' && c.unsyncedDocs.length > 0);
+  const alreadySynced = changesByFile.filter(c => c.kind === 'substantive' && c.unsyncedDocs.length === 0 && c.alreadyTouchedDocs.length > 0);
   const trivials = changesByFile.filter(c => c.kind !== 'substantive');
   const criticalCount = 0;
   const warningCount = warnings.length;
   const infoCount =
     trivials.length +
+    alreadySynced.length +
     renamesReport.length +
     (mdChanged.length > 0 ? 1 : 0) +
     (autoBootstrapped ? 1 : 0);
 
   const docsAffected = new Set();
-  for (const c of changesByFile) for (const d of c.affectedDocs) docsAffected.add(d);
+  for (const c of changesByFile) {
+    for (const d of c.unsyncedDocs) docsAffected.add(d);
+    for (const d of c.alreadyTouchedDocs) docsAffected.add(d);
+  }
 
   const lines = [];
   lines.push('DOC_GOVERNANCE_UPDATE:');
@@ -227,7 +237,10 @@ function renderReport(opts) {
   lines.push('WARNING (' + warningCount + '):');
   for (const c of warnings) {
     lines.push('  - code_file: ' + c.path + ' (kind: substantive)');
-    lines.push('    affected_docs: [' + c.affectedDocs.join(', ') + ']');
+    lines.push('    affected_docs: [' + c.unsyncedDocs.join(', ') + ']');
+    if (c.alreadyTouchedDocs.length) {
+      lines.push('    also_touched_in_range: [' + c.alreadyTouchedDocs.join(', ') + ']');
+    }
     if (c.sample.length) {
       lines.push('    diff_sample:');
       for (const s of c.sample) lines.push('      ' + s);
@@ -242,13 +255,16 @@ function renderReport(opts) {
     lines.push('  - baseline_auto_sealed: first run, sealed to ' + (map.sealedSha || '(no-git)'));
     lines.push('    suggested_action: commit .doc-governance/map.md to persist the baseline');
   }
+  for (const c of alreadySynced) {
+    lines.push('  - already_synced_in_diff_range: ' + c.path);
+    lines.push('    affected_docs: [' + c.alreadyTouchedDocs.join(', ') + ']');
+    lines.push('    reason: every doc referencing this path was edited in the same diff-range');
+    lines.push('    suggested_action: none; docs already updated');
+  }
   for (const c of trivials) {
     lines.push('  - trivial_change: ' + c.path + ' (kind: ' + c.kind + ')');
-    const docs = c.affectedDocs;
-    const summary = docs.length <= 3
-      ? '[' + docs.join(', ') + ']'
-      : '[' + docs.slice(0, 3).join(', ') + ', ... (' + docs.length + ' total)]';
-    lines.push('    affected_docs_if_substantive: ' + summary);
+    const total = c.unsyncedDocs.length + c.alreadyTouchedDocs.length;
+    lines.push('    affected_docs_count: ' + total + ' (suppressed; kind implies no action needed)');
     const kindLabel = c.kind === 'whitespace-only' ? 'whitespace' : 'comment';
     lines.push('    reason: only ' + kindLabel + ' lines changed; docs referencing this path are unlikely to be impacted');
     lines.push('    suggested_action: none unless the ' + kindLabel + ' carried semantic guidance');
@@ -304,12 +320,14 @@ function main() {
 
   const entries = getChangedEntries({ args, sealedSha: map.sealedSha, root });
   const { codeChanged, mdChanged, renames } = classifyEntries(entries);
+  const mdChangedSet = new Set(mdChanged);
 
   const changesByFile = buildChangesByFile({
     codeChanged,
     mapDocs: map.docs,
     root,
     sealedSha: map.sealedSha,
+    mdChangedSet,
   });
   const renamesReport = classifyRenamesAgainstDocs(renames, map.docs);
 

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0] - 2026-07-21
+
+### Changed
+- **`bin/lib/scan.js` `EXCLUDE_DIRS`** now skips `.agents/`, `.claude/`, and `graphify-out/` when building the map. Third-party skill/plugin drops (`.agents/skills/**`, `.claude/skills/**`, `.claude/plugins/**`) and Graphify snapshots describe upstream tools, not the host repo — matching their `SKILL.md`/`README.md` as `affected_docs` was 100% false-positive noise. Verified in a real session (Almacen repo, 2026-07-20): 4 of 8 warnings were third-party skill READMEs.
+- **`bin/update.js` already-synced detection**: when every doc referencing a changed code file was also edited in the same diff-range, downgrade from WARNING to a new INFO subtype `already_synced_in_diff_range` instead of firing a spurious warning. WARNING entries also gain an optional `also_touched_in_range:` field so partial overlaps are traceable. Kills the "you edited CHANGELOG.md in the same commit but I still warn about it" class of false-positive.
+- **`bin/update.js` trivial change output** no longer lists per-doc paths under `affected_docs_if_substantive` for `comment-only`/`whitespace-only` changes. Emits a single `affected_docs_count: N (suppressed; kind implies no action needed)` line instead — was up to 18 doc paths for one comment tweak.
+
+### Added
+- `bin/lib/self-test-update.js`: zero-framework smoke that spins a tmpdir with `git init`, plants a doc↔code pair, edits both in the working tree, and asserts the report emits `already_synced_in_diff_range` with zero warnings. Run with `node bin/lib/self-test-update.js`.
+
+### Notes
+- Sub-decisions declined (deferred to Backlog with activation criteria): heading-context downgrade for changelog/roadmap prose mentions, `--reseal-if-clean` CLI flag, file:line snippets in `suggested_action`. See `ROADMAP.md ## Deferred Backlog`.
+
 ## [0.6.2] - 2026-07-21
 
 - feat: add support for detecting symbol drift and enhance CHANGELOG validation

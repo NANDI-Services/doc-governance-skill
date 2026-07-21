@@ -99,6 +99,8 @@ Use only the files that match the actual impact:
 - `TROUBLESHOOTING.md`: recurring failures, diagnostics, safe remediation
 - `API.md` or `docs/api/**`: API behavior or contract changes
 - `docs/**`: deep technical documentation not suitable for top-level docs
+- **dep add/remove** (`package.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, etc.): `CHANGELOG.md` + `README.md` (si la dep aparece en setup/install) + el manifest propio
+- **script/comando renombrado** (`next lint` → `eslint .`, `npm test` → `vitest`, etc.): `CHANGELOG.md` + `AGENTS.md` / `CONTRIBUTING.md` si documentan comandos
 
 ## Minimal Output Format
 At completion, emit exactly this block:
@@ -198,7 +200,16 @@ test -f .doc-governance/map.md && echo "map exists" || echo "no map"
 
 1. **Corré el flujo manual completo**: inspeccionar cambios, decidir routing usando `## Document Routing By Type`, editar los docs impactados, emitir el bloque `Action Taken` / `Justification` / `Persisted Rule`.
 
-2. **Ofrecé sellar un baseline nuevo al final**, con un mensaje explicativo en lenguaje NO técnico:
+2. **Cross-check CHANGELOG "Unreleased"** (previene drift-ahead — CHANGELOG que miente sobre el estado del working tree):
+
+   - Localizá la sección `[Unreleased]` / `[Sin publicar]` en `CHANGELOG.md`.
+   - Bajo `### Removed` / `### Removido`, extraé cada backtick-token con extensión de archivo (`X.tsx`, `path/Y.ts`, `lib/Z.js`).
+   - Para cada token, verificá con `git ls-files -- <path>`. Si devuelve el path (el archivo sigue tracked) pero el bullet dice "eliminado" → warning `changelog_drift_ahead`.
+   - Corregí el bullet (o restaurá el archivo, según la intent real) ANTES de emitir el bloque `Action Taken`.
+
+   Este check compensa la limitación documentada en `## Known Limitations`: el skill mide path-refs del diff, no valida coherencia interna del CHANGELOG.
+
+3. **Ofrecé sellar un baseline nuevo al final**, con un mensaje explicativo en lenguaje NO técnico:
 
    ```
    ¿Querés que saque una "foto nueva" del estado actual de tu documentación?
@@ -218,9 +229,9 @@ test -f .doc-governance/map.md && echo "map exists" || echo "no map"
    ¿Saco la foto nueva? (sí / no)
    ```
 
-3. **Si el user confirma**, correr `node .ai/skills/doc-governance-skill/bin/audit.js` y avisar de commitear `.doc-governance/map.md`.
+4. **Si el user confirma**, correr `node .ai/skills/doc-governance-skill/bin/audit.js` y avisar de commitear `.doc-governance/map.md`.
 
-4. **Si el user rechaza**, cerrar sin acción — dejar el baseline como estaba.
+5. **Si el user rechaza**, cerrar sin acción — dejar el baseline como estaba.
 
 Regla de oro: la skill empodera al user, no lo reemplaza. Nunca correr audit sin confirmación explícita en esta ruta.
 
@@ -245,3 +256,23 @@ To keep the signal-to-noise ratio high, `bin/update.js` inspects each changed co
 Unknown extensions default to `substantive` (safer to over-warn than under-warn on a language the classifier does not know). If your repo uses a language not yet covered, add its comment regex to `bin/lib/diff-classify.js` (`COMMENT_PATTERNS_BY_EXT`).
 
 The classifier only downgrades — it never upgrades. A missed classification is a WARNING, not silent suppression.
+
+## Known Limitations
+
+`bin/update.js` mide **referencias a paths** en `.md` — no símbolos, ni scripts, ni prosa descriptiva. `docs_affected: 0` significa "ningún doc menciona un path del diff", NO "docs al día". Casos no cubiertos:
+
+- **Símbolos borrados citados por nombre**: `README.md` dice "usa `chart.js`" y el diff elimina `chart.js` de `package.json`. El nombre no es un path; el skill no avisa.
+- **Scripts/comandos en prosa**: `CONTRIBUTING.md` dice `pnpm lint`. Si el script cambia (`next lint` → `eslint .`), el skill no lo detecta.
+- **Estado descrito en prosa**: `DESIGN.md` dice "el dashboard usa chart.js". Sigue prosaicamente válido, pero drift real si la lib desaparece.
+- **CHANGELOG drift-ahead**: el bullet dice "eliminado `X.tsx`" pero `X.tsx` sigue en `git ls-files`. Cross-check se hace como paso manual en `## Root Invocation Behavior > Flujo steady-state` (ver abajo).
+
+**Complemento recomendado ante "docs al día"** — grep de símbolos/scripts/deps borrados sobre todos los `.md`:
+
+```bash
+git diff --name-only <sealed-sha> \
+  | xargs -I{} basename {} \
+  | while read f; do grep -l "$f" $(git ls-files '*.md') 2>/dev/null; done \
+  | sort -u
+```
+
+Extensión opt-in de detección automática de símbolos (`--symbols`) está trackeada en `ROADMAP.md ## Deferred Backlog`. Por ahora, prosa y símbolos requieren revisión manual — el skill mide path-drift, no intent-drift.

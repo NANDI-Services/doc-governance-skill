@@ -133,6 +133,7 @@ Explicitly deferred from v0.2 to keep the shipped surface minimal. Each item lan
 - **Link vs prose distinction in code refs**: only warn when a doc contains a markdown link `](path)`, not a bare backtick mention. Requires refactor of `extractCodeRefs` in `bin/lib/scan.js` to preserve context. Would reduce README/CLAUDE.md false positives materially.
 - **Auto-suggest reseal at threshold**: when `map_staleness >= 3` `.md` files, offer to re-audit inline with a confirm prompt. Small UX add, orthogonal to core logic.
 - **`--include-trivial` flag**: escalate `whitespace-only`/`comment-only` INFO back to WARNING for operators that want maximum recall. Add on request only.
+- **`--symbols` opt-in mode**: extraer identificadores del diff (`^\+.*(?:export\s+(?:const|function|class|type)|import\s.*from|"([^"]+)":)`) y grepearlos sobre `git ls-files '*.md'`, reportar como `SYMBOL_DRIFT` (Warning). ~60 líneas Node en `bin/update.js`, opt-in por flag para evitar falsos positivos (nombres genéricos como `format`, `parse`, `render` matchean prosa arbitraria). Detectado en corrida SGG jul-2026 donde CHANGELOG citaba `chart.js` sin path — el caso concreto del bullet drift-ahead ya lo cubre el cross-check manual en `SKILL.md ## Root Invocation Behavior > Flujo steady-state paso 2`, este flag lo cubriría automáticamente también para README/DESIGN/CONTRIBUTING/etc. donde citan símbolos en prosa.
 
 ---
 

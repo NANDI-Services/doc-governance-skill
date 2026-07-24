@@ -1,0 +1,27 @@
+# .doc-governance/ignore — copy to .doc-governance/ignore to activate.
+#
+# One glob per line. Syntax:
+#   *   matches within a single path segment (not across /)
+#   **  matches across segments
+#   /   trailing slash means "this directory and everything under it"
+#   #   comment (line-based)
+#
+# No negation, no [charclass], no ?. Matches are checked against POSIX
+# repo-relative paths. Applies to BOTH .md docs (they drop out of the map)
+# AND code files (their changes stop triggering warnings).
+#
+# Typical noise sources — uncomment the ones that apply.
+
+# Third-party skill/plugin drops already excluded by default, but keep here
+# if you drop them at non-standard paths:
+# vendor-skills/**
+# .assistant/skills/**
+
+# Ephemeral planning docs you don't want mapped:
+# docs/plans/**
+# Task*.md
+# NOTES-*.md
+
+# Auto-generated docs that regenerate on every build:
+# docs/api/generated/**
+# docs/openapi.md

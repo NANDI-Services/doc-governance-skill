@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { loadIgnore } = require('./ignore');
 
 // ponytail: exclude third-party skill/plugin drops and auto-gen dirs. Their
 // SKILL.md/README.md describe upstream tools, not the host repo — matching them
@@ -56,22 +57,27 @@ function extractTitle(content) {
   return null;
 }
 
-function* walkMarkdown(root, relDir = '') {
+function* walkMarkdown(root, ignore, relDir = '') {
   const dir = path.join(root, relDir);
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const e of entries) {
     if (e.isDirectory()) {
       if (EXCLUDE_DIRS.has(e.name)) continue;
-      yield* walkMarkdown(root, path.join(relDir, e.name));
+      const subRel = path.join(relDir, e.name).replace(/\\/g, '/');
+      if (ignore.matches(subRel + '/')) continue;
+      yield* walkMarkdown(root, ignore, path.join(relDir, e.name));
     } else if (e.isFile() && /\.md$/i.test(e.name)) {
-      yield path.join(relDir, e.name).replace(/\\/g, '/');
+      const rel = path.join(relDir, e.name).replace(/\\/g, '/');
+      if (ignore.matches(rel)) continue;
+      yield rel;
     }
   }
 }
 
 function scanRepo(root) {
+  const ignore = loadIgnore(root);
   const paths = [];
-  for (const p of walkMarkdown(root)) paths.push(p);
+  for (const p of walkMarkdown(root, ignore)) paths.push(p);
   paths.sort();
   const docs = [];
   for (const relPath of paths) {

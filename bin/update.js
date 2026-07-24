@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { scanRepo, renderMap } = require('./lib/scan');
 const { classifyFileDiff } = require('./lib/diff-classify');
+const { loadIgnore } = require('./lib/ignore');
 
 const BOOTSTRAP_TOOL_VERSION = 'update-bootstrap';
 
@@ -131,12 +132,13 @@ function pathsMatch(codeRef, changed) {
   return false;
 }
 
-function classifyEntries(entries) {
+function classifyEntries(entries, ignore) {
   const codeChanged = [];
   const mdChanged = [];
   const renames = [];
   for (const e of entries) {
     if (e.path.startsWith('.doc-governance/')) continue;
+    if (ignore && ignore.matches(e.path)) continue;
     if (e.status === 'R' || e.status === 'C') {
       renames.push({ oldPath: e.oldPath, newPath: e.path });
       continue;
@@ -319,7 +321,8 @@ function main() {
   const map = parseMap(fs.readFileSync(mapPath, 'utf8'));
 
   const entries = getChangedEntries({ args, sealedSha: map.sealedSha, root });
-  const { codeChanged, mdChanged, renames } = classifyEntries(entries);
+  const ignore = loadIgnore(root);
+  const { codeChanged, mdChanged, renames } = classifyEntries(entries, ignore);
   const mdChangedSet = new Set(mdChanged);
 
   const changesByFile = buildChangesByFile({

@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.8.0] - 2026-07-24
+
+### Added
+- **`.doc-governance/ignore`** — per-repo glob list (gitignore-lite: `*`, `**`, trailing `/`, `#` comments). Excludes both `.md` docs (drop out of the map) and code files (their changes stop triggering warnings). Addresses the top-ROI item from the SGG-session feedback: substring-grep on paths generates 30–50% noise from ephemeral planning docs (`docs/plans/**`, `Task*.md`) and third-party skill drops. Committable example at `templates/doc-governance-ignore.example`. Parser lives in `bin/lib/ignore.js` (zero-dep, ~40 lines).
+- **`bin/lib/self-test-update.js`** grows a second case (`demoIgnore`): asserts an ignored doc drops from the map AND that its code refs stop firing warnings, while a non-ignored doc/code pair still warns as expected.
+
+### Changed
+- **`SKILL.md` opens with `## How Detection Works`** — states upfront that detection is substring-matching (not semantic), warns that it over-reports by design, and points to `.doc-governance/ignore` as the noise reducer. Addresses feedback: "un usuario nuevo espera detección semántica y se frustra rápido".
+- **`## Root Invocation Behavior > Flujo steady-state`** shortens the reseal prompt from a 6-line explanatory block ("¿Querés que saque una foto nueva? / Qué significa esto / Para qué sirve / ...") to a single `Reseleo baseline? [Y/n]` line (default yes). Preserves explicit consent (the "regla de oro" of user-empowerment) while killing the friction that was pushing users to skip it. Feedback in the SGG session showed users were accepting the reseal anyway — the ceremonial explanation was the actual cost.
+- **Version bumped manually** (feature-scope): `SKILL.md`, `bin/audit.js` `TOOL_VERSION` → `0.8.0`.
+
+### Notes
+- Explicit-anchor opt-in (`<!-- gov:track path="..." -->`) deferred: is a contract change that only pays off once users hit the ignore-list ceiling. Revisit if noise persists after 0.8.0.
+- Prose/symbol drift detection remains out of scope — see `## Known Limitations` for the manual grep complement.
+
 ## [0.7.0] - 2026-07-21
 
 ### Changed

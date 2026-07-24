@@ -68,4 +68,65 @@ function demo() {
   }
 }
 
+function demoIgnore() {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'doc-gov-ignore-'));
+  const binDir = path.join(__dirname, '..');
+  const auditScript = path.join(binDir, 'audit.js');
+  const updateScript = path.join(binDir, 'update.js');
+
+  try {
+    run('git', ['init', '--quiet'], tmp);
+    run('git', ['config', 'user.email', 'test@example.com'], tmp);
+    run('git', ['config', 'user.name', 'Test'], tmp);
+    run('git', ['config', 'commit.gpgsign', 'false'], tmp);
+
+    // Two doc<->code pairs: one tracked, one to be ignored via glob.
+    fs.mkdirSync(path.join(tmp, 'code'), { recursive: true });
+    fs.mkdirSync(path.join(tmp, 'docs', 'plans'), { recursive: true });
+    fs.writeFileSync(path.join(tmp, 'code', 'foo.js'), 'module.exports = 1;\n');
+    fs.writeFileSync(path.join(tmp, 'code', 'bar.js'), 'module.exports = 2;\n');
+    fs.writeFileSync(path.join(tmp, 'README.md'), '# R\n\nUses `code/foo.js`.\n');
+    fs.writeFileSync(path.join(tmp, 'docs', 'plans', 'draft.md'), '# D\n\nMentions `code/bar.js`.\n');
+
+    fs.mkdirSync(path.join(tmp, '.doc-governance'), { recursive: true });
+    fs.writeFileSync(path.join(tmp, '.doc-governance', 'ignore'), 'docs/plans/**\n');
+
+    run('git', ['add', '.'], tmp);
+    run('git', ['commit', '-m', 'baseline', '--quiet'], tmp);
+
+    run('node', [auditScript], tmp);
+
+    // Verify map excluded the ignored doc.
+    const mapText = fs.readFileSync(path.join(tmp, '.doc-governance', 'map.md'), 'utf8');
+    assert(mapText.includes('### README.md'), 'expected README.md in map\n---\n' + mapText);
+    assert(!mapText.includes('docs/plans/draft.md'), 'ignored doc leaked into map\n---\n' + mapText);
+
+    // Change BOTH code files. Only foo.js (referenced by non-ignored doc) should warn.
+    fs.writeFileSync(path.join(tmp, 'code', 'foo.js'), 'module.exports = 10;\n');
+    fs.writeFileSync(path.join(tmp, 'code', 'bar.js'), 'module.exports = 20;\n');
+
+    let out;
+    try { out = run('node', [updateScript], tmp); }
+    catch (e) { out = (e.stdout || '') + (e.stderr || ''); } // exit 1 on warning is expected
+
+    assert(
+      /code_file: code\/foo\.js/.test(out),
+      'expected warning for code/foo.js\n---\n' + out
+    );
+    assert(
+      !/code_file: code\/bar\.js/.test(out),
+      'bar.js referenced only by ignored doc should NOT warn\n---\n' + out
+    );
+    assert(
+      /SUMMARY: 0 critical, 1 warnings/.test(out),
+      'expected exactly 1 warning\n---\n' + out
+    );
+
+    console.log('ok  .doc-governance/ignore filters ignored docs and their code refs');
+  } finally {
+    try { fs.rmSync(tmp, { recursive: true, force: true }); } catch {}
+  }
+}
+
 demo();
+demoIgnore();

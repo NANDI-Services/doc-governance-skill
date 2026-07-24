@@ -69,3 +69,7 @@ If `SKILL.md`'s manually-pinned `version:` is higher than the auto-bump, the pin
 ## Skills.sh Publishing (fallback path)
 
 Discovery on skills.sh is telemetry-driven: only `npx skills add <owner>/doc-governance-skill` fires the indexing event. Search/leaderboard visibility follows install counts, not manual registration. Since v0.5 the canonical README install is the two-step `claude plugin marketplace add` + `claude plugin install <name>@nandi-services` (fixes the bogus one-liner from v0.4 that never worked), so skills.sh installs come from users who arrive via the leaderboard — the README lists `npx skills add` as a documented fallback. Do not add "register on skills.sh" steps.
+
+## Lessons Learned
+
+- **Skill prompt-driven: preferir instrucción en SKILL.md antes que código nuevo en `bin/*.js`**: al aplicar feedback sobre un skill cuyo flujo real lo ejecuta el LLM (no un binario), un check nuevo (ej. "cross-check CHANGELOG Unreleased contra `git ls-files`") vive como paso numerado en `## Root Invocation Behavior`, NO como parser en `bin/*.js`. El LLM ya corre `git`, ya lee CHANGELOG. Regla: antes de escribir código nuevo en un skill, preguntar "¿el LLM ya tiene los tools para hacer este check en 3 líneas de instrucción?". Solo pasar a código cuando (a) es opt-in por flag CLI, (b) requiere estado entre invocaciones, o (c) el costo LLM del check es alto en cada corrida.

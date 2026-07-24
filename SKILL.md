@@ -1,7 +1,7 @@
 ---
 name: doc-governance-skill
 description: Decide doc-impact after meaningful code, config, CI/CD, security, architecture, API, or workflow changes, route updates to the right files, and avoid activation for cosmetic-only or behavior-neutral edits.
-version: 0.7.0
+version: 0.8.0
 ---
 
 # Repo Doc Governance
@@ -13,6 +13,14 @@ It answers three questions after a meaningful change:
 1. Does this change require documentation updates?
 2. Which document should be updated?
 3. What minimum report should be emitted at completion?
+
+## How Detection Works (read this before expecting more)
+
+The skill grep-ea path-refs en backticks / fenced blocks de tus `.md` y los compara contra `git diff --name-only`. Es **substring-matching sobre paths**, no análisis semántico. Un doc que menciona `apps/api/` en prosa se flagea cuando cambia CUALQUIER cosa bajo `apps/api/`. Consecuencias:
+
+- **Sobre-reporta por diseño.** Un `docs_affected: 0` es señal fuerte ("nada relevante"); un warning requiere triage humano.
+- **No detecta prose/symbol drift.** README que dice "usa `chart.js`" no genera warning si borrás `chart.js` del `package.json` (el nombre no es un path). Ver `## Known Limitations` para el complemento manual con grep.
+- **Ruido reducible con `.doc-governance/ignore`.** Globs por línea (sintaxis gitignore-lite). Excluye docs enteros (`docs/plans/**`, `Task*.md`) y sus code-refs asociados. Ejemplo commiteable: `templates/doc-governance-ignore.example`.
 
 ## When To Use
 Use this skill after a task that may affect maintainers, operators, contributors, or users.
@@ -209,31 +217,14 @@ test -f .doc-governance/map.md && echo "map exists" || echo "no map"
 
    Este check compensa la limitación documentada en `## Known Limitations`: el skill mide path-refs del diff, no valida coherencia interna del CHANGELOG.
 
-3. **Ofrecé sellar un baseline nuevo al final**, con un mensaje explicativo en lenguaje NO técnico:
+3. **Ofrecé re-sellar el baseline (una línea)**: emitir literal `Reseleo baseline? [Y/n]` y esperar respuesta.
 
-   ```
-   ¿Querés que saque una "foto nueva" del estado actual de tu documentación?
+   - Enter / `y` / `yes` / `sí` → correr `node <skill-root>/bin/audit.js`, avisar `Baseline re-sellado (SHA <short>, N docs). Incluí .doc-governance/map.md en tu próximo commit.`
+   - `n` / `no` → cerrar sin acción.
 
-   Qué significa esto:
-   - Escaneo cada archivo .md del repo
-   - Anoto qué archivos de código menciona cada uno
-   - Guardo esa lista como referencia
+   Skip enteramente la pregunta si el flujo se disparó desde `/doc-governance-skill:update` (drift check puro, no toca baseline) o si el user pasó `--no-seal` / "no reseales" en el mensaje original.
 
-   Para qué sirve: la próxima vez que corras el chequeo de drift
-   (`/doc-governance-skill:update`), se compara contra esta foto. Si un
-   doc menciona código que cambió desde entonces, te lo marca.
-
-   Foto actual: sellada el <fecha> contra el commit <SHA-corto> (o "no hay foto aún")
-   Foto nueva: se sellaría contra tu commit actual <SHA-corto>
-
-   ¿Saco la foto nueva? (sí / no)
-   ```
-
-4. **Si el user confirma**, correr `node .ai/skills/doc-governance-skill/bin/audit.js` y avisar de commitear `.doc-governance/map.md`.
-
-5. **Si el user rechaza**, cerrar sin acción — dejar el baseline como estaba.
-
-Regla de oro: la skill empodera al user, no lo reemplaza. Nunca correr audit sin confirmación explícita en esta ruta.
+   Regla de oro: la skill empodera al user, no lo reemplaza. La pregunta es corta pero explícita — nunca correr audit sin confirmación.
 
 ## Drift Categories Monitored
 

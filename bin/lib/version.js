@@ -1,7 +1,7 @@
 // Single source of truth for the tool version. `.github/scripts/release.sh`
 // rewrites the declaration below with sed, so keep it on one line, single
 // quoted and semicolon-terminated — reformatting it breaks releases silently.
-const TOOL_VERSION = '0.9.2';
+const TOOL_VERSION = '0.9.3';
 
 // Versions at which the SET OF SCANNED FILES changed. A baseline sealed on one
 // side of these and checked from the other is not merely stale — it is

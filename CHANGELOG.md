@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.3] - 2026-08-06
+
+### Added
+- **`README.md` gana una sección `## Updating`.** El README documentaba la instalación en dos lugares, la comparación entre canales y el porqué de `marketplace add` separado de `install` — y ni una línea sobre cómo actualizar. Lo destapó el propio maintainer preguntándolo, que es la señal más fuerte de que una doc falta. Cubre los tres canales (plugin, skills.sh, bundling por repo), que en el camino de plugin son **dos** comandos y en ese orden —`marketplace update` antes de `plugin update`, porque el catálogo se cachea aparte y se queda atrás— y que el cambio se aplica al reiniciar. Suma cómo confirmar el resultado con `bin/which.js --verbose`, incluida la advertencia de que una actualización no siempre borra la copia anterior y con dos conviviendo gana la que resuelva primero. Aclara además que los installs resuelven contra `main` y no contra el último tag, así que "la última" puede ir por delante del último release publicado. Puntero cruzado desde `Uninstall and Maintenance`, que es donde alguien busca "actualizar" sin encontrarlo.
+
+### Notes
+- Release sólo de documentación, cortado para que `main` y el último tag no queden desfasados. Publicado con el camino local (`bash .github/scripts/release.sh`) mientras GitHub Actions seguía en `major_outage` — segundo uso real del escape hatch que agregó 0.9.2.
+- Es la clase de drift que este skill **no** detecta: no es un path que cambió, es una sección que nunca existió. Ver `## Known Limitations` en `SKILL.md`.
+
 ## [0.9.2] - 2026-08-06
 
 Un release que no se puede publicar sin GitHub Actions no es un release: es una dependencia. El 2026-08-06 Actions entró en `major_outage`, el push de 0.9.1 llegó a `main` y ningún workflow arrancó — sin forma de destrabarlo.

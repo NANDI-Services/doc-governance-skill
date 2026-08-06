@@ -1,8 +1,9 @@
 <!-- doc-governance:map v1 -->
-sealed_sha: da11fd29fc048a50c2b622096d609241d5ebc31d
-sealed_at: 2026-08-06T20:55:10.267Z
+sealed_sha: 0839e38f6dabb1b06069ae9b6ddd1ab6e25d06a3
+sealed_at: 2026-08-06T21:05:59.709Z
 tool_version: 0.9.2
-sealed_dirty: []
+sealed_dirty:
+  - ff57f553bb256c1976e5733ce2850aded5247592 README.md
 
 ## Inventory
 
@@ -236,6 +237,10 @@ headings:
   - H3: Canonical: add the marketplace, then install
   - H3: Team bundling (optional)
   - H3: skills.sh (fallback)
+  - H2: Updating
+  - H3: Confirming the update landed
+  - H3: What "latest" means here
+  - H3: After updating
   - H2: Usage Example
   - H2: Two-Mode Operation
   - H2: Slash-Commands
@@ -253,6 +258,7 @@ headings:
   - H2: License
   - H2: Lessons Learned
 code_refs:
+  - ./install.sh
   - .agents/
   - .ai/
   - .ai/skills/doc-governance-skill/

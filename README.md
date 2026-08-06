@@ -164,6 +164,58 @@ npx skills add NANDI-Services/doc-governance-skill
 
 Trade-off: this path registers **only** the skill (no `/doc-governance-skill:update` literal slash). The update sub-mode still activates by intent. Prefer `claude plugin install` unless you specifically want a skills.sh-only install.
 
+## Updating
+
+Update the same way you installed.
+
+**Plugin (canonical):**
+
+```bash
+claude plugin marketplace update nandi-services
+claude plugin update doc-governance-skill
+```
+
+Then **restart Claude Code** — `claude plugin update` applies on restart, not immediately.
+
+Both commands, in that order: the marketplace is a cached catalog stored separately from the plugin, and it lags. Refresh the catalog first so the plugin update has something newer to resolve to.
+
+**skills.sh:** re-run the install command; it updates in place.
+
+```bash
+npx skills add NANDI-Services/doc-governance-skill
+```
+
+**Team bundling:** pull the skill repo and re-run `./install.sh` (or `install.ps1`). Both are idempotent — re-running is the update.
+
+### Confirming the update landed
+
+```bash
+node ~/.claude/skills/doc-governance-skill/bin/which.js --verbose
+```
+
+Lists every installed copy with its version, marks the one that will run, and warns if an older copy is still sitting around — an upgrade does not always remove the previous one, and when two coexist the results depend on which resolves first. `claude plugin list` also reports the version.
+
+To ask a specific copy directly:
+
+```bash
+node <skill-root>/bin/update.js --version
+# doc-governance-skill 0.9.2 (/home/you/.claude/skills/doc-governance-skill)
+```
+
+### What "latest" means here
+
+Releases are cut from `main`, and installs resolve against `main` — not against the newest tag. Updating gives you the current state of `main`, which may be ahead of the last published release. Tags and GitHub Releases are the changelog, not the delivery mechanism.
+
+### After updating
+
+If your `.doc-governance/map.md` was sealed by an older version, the next Update run says so:
+
+```text
+tool_version: 0.9.2 (baseline sealed with 0.8.0)
+```
+
+That alone is informational. It escalates to a **Warning** when the version gap crosses a release that changed which files get scanned — then the baseline is not merely old, it maps a different set of files, and a re-seal (`bin/audit.js`) is required before the report can be trusted.
+
 ## Usage Example
 After implementing a meaningful repository change, run the skill and follow its output format:
 
@@ -303,6 +355,8 @@ Uninstall local installation:
 ```bash
 ./uninstall.sh
 ```
+
+Looking for how to upgrade an existing install? See [Updating](#updating).
 
 Maintenance guidance:
 - Keep `SKILL.md` as the canonical source of behavior.

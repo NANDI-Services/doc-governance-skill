@@ -1,19 +1,8 @@
 <!-- doc-governance:map v1 -->
-sealed_sha: 1ff0038e9fabbf5a698ab7dad9e7c74739c92270
-sealed_at: 2026-08-06T20:49:37.566Z
+sealed_sha: da11fd29fc048a50c2b622096d609241d5ebc31d
+sealed_at: 2026-08-06T20:55:10.267Z
 tool_version: 0.9.2
-sealed_dirty:
-  - 8337b774c3de0292ad30745a8ce1e0af172f01c8 .claude-plugin/plugin.json
-  - 29e8c90c6df41ca0b4efe5f3d101d5bba07c36f0 .github/scripts/release.sh
-  - ed0bb51bf3201feedececb8010a817e94c55e0d3 .github/workflows/ci.yml
-  - bb57dd74fed79a4160470467e99c8f15835f40cb .github/workflows/release.yml
-  - 6972ed73cd16c159915a87072fbe4c1f10285d55 CHANGELOG.md
-  - 620718215f66bf56406e2138800a5d096e3a9031 CLAUDE.md
-  - 9a80663dc9b12c7320134cd50e3977486ec87fa9 RELEASE_CHECKLIST.md
-  - 7c97449d5159231be8985a9f9a0e4d9be554c7a4 SKILL.md
-  - c06df70967a8e9ea904108092e97c36e2abdacf4 bin/lib/self-test-update.js
-  - b54a4bbea20e7c897d48aa940e7fb14843b602c7 bin/lib/version.js
-  - bc61c26a3e093808d2573f7c6224a6c98a0d6d56 docs/superpowers/specs/2026-08-06-release-manual-path-design.md
+sealed_dirty: []
 
 ## Inventory
 

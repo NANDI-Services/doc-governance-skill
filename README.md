@@ -191,6 +191,8 @@ On the first run without `.doc-governance/map.md`, Update auto-creates the basel
 
 Update accepts optional overrides: `--since <ref>` (diff against a different git ref), `--files a,b,c` (skip git diff, use an explicit file list), or stdin (`git diff --name-only | update.js`).
 
+**Baseline integrity (0.9.0).** Update compares the version that sealed the map against its own. If the gap crosses a release that changed which files get scanned, it fails with `baseline_version_drift` — the baseline is not just old, it maps a different set of files, and two installed copies of the skill will give different answers on the same repo. Re-sealing clears it permanently. Re-sealing is also safe to do mid-change: Audit records the content of everything uncommitted at seal time, so the commit that carries the new map reports `carried_from_seal`, not drift.
+
 Path note: both commands assume the skill installed at `.ai/skills/doc-governance-skill/` (per-repo default). Adjust to `~/.claude/skills/doc-governance-skill/bin/…` for a global install.
 
 Example output when one changed code file is referenced by a doc:
@@ -205,15 +207,23 @@ docs_affected: 1
 CRITICAL (0):
 
 WARNING (1):
-  - doc: README.md
-    referenced_code_changed: [scripts/deploy.sh]
+  - code_file: scripts/deploy.sh (kind: substantive)
+    affected_docs: [README.md]
+    diff_sample:
+      - REGISTRY=old.example.com
+      + REGISTRY=new.example.com
     reason: doc references code that changed since baseline
-    suggested_action: review sections in README.md that mention changed paths
+    suggested_action: review sections in affected_docs that mention scripts/deploy.sh
 
-INFO (0):
+INFO (1):
+  - carried_from_seal: CHANGELOG.md
+    reason: content is byte-identical to what the baseline scan already saw
+    suggested_action: none
 
-SUMMARY: 0 critical, 1 warnings, 0 info
+SUMMARY: 0 critical, 1 warnings, 1 info
 ```
+
+Entries are keyed by **changed code file**, not by doc: one edit to a widely-referenced path produces one entry listing every affected doc, not one entry per doc.
 
 Exit codes: audit → 0 OK / 1 error. Update → 0 clean or Info-only / 1 with Warning or Critical.
 

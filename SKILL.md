@@ -1,7 +1,7 @@
 ---
 name: doc-governance-skill
 description: Decide doc-impact after meaningful code, config, CI/CD, security, architecture, API, or workflow changes, route updates to the right files, and avoid activation for cosmetic-only or behavior-neutral edits.
-version: 0.8.0
+version: 0.9.0
 ---
 
 # Repo Doc Governance
@@ -140,10 +140,15 @@ node .ai/skills/doc-governance-skill/bin/audit.js
 Path note: the command assumes the skill installed at `.ai/skills/doc-governance-skill/` (per-repo default from `install.sh`). Adjust to `~/.claude/skills/doc-governance-skill/bin/…` for a global install, or wherever the skill lives in your setup.
 
 Behavior:
-- Scans every `*.md` in the repo (skipping `.git`, `node_modules`, `dist`, `build`, `.next`, `target`, `vendor`, `.venv`, `venv`, `.doc-governance`, `.ai`).
+<!-- exclude-dirs:start -->
+- Scans every `*.md` in the repo (skipping `.git`, `node_modules`, `dist`, `build`, `.next`, `target`, `vendor`, `.venv`, `venv`, `.doc-governance`, `.ai`, `.agents`, `.claude`, `graphify-out`), plus anything matched by `.doc-governance/ignore`.
+<!-- exclude-dirs:end -->
 - For each doc, records: title (first H1), heading tree (H1–H3), and detected code refs (paths in backticks + fenced blocks annotated with `path=`).
-- Writes `.doc-governance/map.md`, sealed with the current `git HEAD` SHA and an ISO 8601 timestamp.
+- Writes `.doc-governance/map.md`, sealed with the current `git HEAD` SHA, an ISO 8601 timestamp, and the `tool_version:` that sealed it.
+- Records `sealed_dirty:` — every path whose worktree content differs from `HEAD` at seal time, with its content hash. The scan reads the **worktree** while `sealed_sha` names **HEAD**, so without this the next run reports the reseal's own commit as drift.
 - Exit 0 on success, 1 on I/O or git error.
+
+The line above is generated from `EXCLUDE_DIRS` in `bin/lib/scan.js` by `bin/lib/sync-exclude-dirs.js`; CI runs it with `--check`. Edit the code, not the prose.
 
 After running audit, commit `.doc-governance/map.md`. It is the shared baseline the update mode diffs against.
 
@@ -164,13 +169,15 @@ Optional overrides:
 
 Behavior:
 - If `.doc-governance/map.md` is missing, auto-creates it by scanning the repo and sealing to current `git HEAD` (see `## First Run / No Baseline` below).
-- Reads `.doc-governance/map.md`, extracts the sealed SHA.
+- Reads `.doc-governance/map.md`, extracts the sealed SHA, the `tool_version:` and the `sealed_dirty:` set.
+- Compares the baseline's `tool_version:` against its own. A mismatch that crosses a version where the scanned file set changed is a **Warning** — the baseline is not merely stale, it maps a different universe of files.
 - Runs `git diff --name-only <sealed_sha>` (working-tree comparison → catches committed + uncommitted).
-- Cross-references changed paths against `code_refs` in the map.
+- Drops any changed path whose content still matches `sealed_dirty:` down to Info (`carried_from_seal`) — the baseline scan already saw those bytes. Skipped under `--since` / `--files` / stdin, where the baseline is a different ref.
+- Cross-references the remaining changed paths against `code_refs` in the map.
 - Emits a `DOC_GOVERNANCE_UPDATE:` block with three severity tiers (Critical / Warning / Info) and a `SUMMARY:` line.
 - Exit 0 clean or Info-only, 1 with any Warning or Critical finding.
 
-For each `- doc: <path>` in the emitted Warning list, use the routing table in `## Document Routing By Type` above to decide whether that doc is the right target — the audit tool detects references, not intent.
+For each `code_file: <path>` in the emitted Warning list, use the routing table in `## Document Routing By Type` above to decide whether the docs named in its `affected_docs:` are the right target — the audit tool detects references, not intent.
 
 ## First Run / No Baseline
 On the first invocation in a repo without `.doc-governance/map.md`:
@@ -222,6 +229,8 @@ test -f .doc-governance/map.md && echo "map exists" || echo "no map"
    - Enter / `y` / `yes` / `sí` → correr `node <skill-root>/bin/audit.js`, avisar `Baseline re-sellado (SHA <short>, N docs). Incluí .doc-governance/map.md en tu próximo commit.`
    - `n` / `no` → cerrar sin acción.
 
+   Desde 0.9.0 el commit que lleva el map re-sellado **no** genera drift sobre sí mismo: `audit.js` registra en `sealed_dirty:` el contenido de todo lo que estaba sin commitear al momento del sello, y `update.js` lo baja a INFO (`carried_from_seal`) mientras siga idéntico. No hace falta commitear el map aparte ni en un orden particular.
+
    Skip enteramente la pregunta si el flujo se disparó desde `/doc-governance-skill:update` (drift check puro, no toca baseline) o si el user pasó `--no-seal` / "no reseales" en el mensaje original.
 
    Regla de oro: la skill empodera al user, no lo reemplaza. La pregunta es corta pero explícita — nunca correr audit sin confirmación.
@@ -232,9 +241,14 @@ test -f .doc-governance/map.md && echo "map exists" || echo "no map"
 |---|---|---|
 | Critical | Reserved (future: semantic mismatch, anchor removed, deleted-file referenced) | Not emitted yet. |
 | Warning | Code path referenced by a doc changed **substantively** since the sealed SHA. One entry per changed code file (not per doc), with `affected_docs:` and a 2-3 line `diff_sample:`. | Review the doc sections listed in `affected_docs:` that mention the changed path; update or confirm still accurate. |
+| Warning | `baseline_version_drift` where the gap between the baseline's `tool_version:` and the running tool crosses a version that changed which files get scanned. | Re-seal. Until then the report covers a different file set than the repo actually has, and two installed copies of the skill will disagree. |
+| Info | `baseline_version_drift` with no scan-universe change crossed, or `baseline_version_unknown` (header has no parseable version). | Re-seal when convenient; results are still comparable. |
+| Info | `carried_from_seal` — a changed path whose content is byte-identical to what the baseline scan already saw. | None. This is the reseal's own commit, already accounted for. |
 | Info | Trivial change (whitespace-only or comment-only) on a referenced path; rename detected (`renamed: A -> B`); `.md` files changed since sealed SHA (map may be stale); auto-bootstrapped baseline. | Depends on subtype — see `suggested_action:` on each entry. |
 
 Exit code: `1` only when there is at least one WARNING. INFO alone returns `0` — it is informational, not blocking.
+
+The version guard is deliberately blocking. A baseline sealed across a scan-universe change is not "a bit old" — it reports on a different set of files, and which copy of the skill resolves first decides the answer. One re-seal clears it for good.
 
 ## Trivial-Change Suppression
 

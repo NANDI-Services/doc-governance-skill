@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.9.0] - 2026-08-06
+
+Baseline integrity release. All three items come from a real session in a consumer repo (SGG, 2026-07-26 → 2026-08-06).
+
+### Added
+- **`bin/lib/version.js`** — single source of truth for `TOOL_VERSION`, plus `SCAN_UNIVERSE_VERSIONS`: the releases at which the *set of scanned files* changed. `release.sh` now seds this file instead of `bin/audit.js`.
+- **Baseline version guard in `bin/update.js`** — the map header has recorded `tool_version:` since v1 of the format and **nothing ever read it back**. It does now. A mismatch is INFO `baseline_version_drift`; a mismatch that crosses a scan-universe change is a **WARNING** (exit 1), because the baseline is not merely stale — it maps a different set of files. Unparseable or absent versions emit INFO `baseline_version_unknown`. Direction-agnostic: an *older* tool run against a *newer* map is the same failure. Why it matters: in SGG a baseline sealed by a cached 0.5.7 copy — installed in parallel with 0.8.0 under `~/.claude/plugins/cache/…` — mapped 294 docs, 257 of them machine-local files that 0.7.0's `EXCLUDE_DIRS` should have skipped. Eleven days of results that differed by whoever ran the check, noticed only when a re-seal deleted 4451 lines. The detecting datum sat in the file header the entire time.
+- **`sealed_dirty:` in the map header** (`bin/lib/scan.js`, `bin/lib/dirty.js`, `bin/audit.js`) — content hash of every path whose worktree state differs from `HEAD` at seal time. Additive to the `v1` format; older parsers skip it.
+- **INFO `carried_from_seal` in `bin/update.js`** — fixes the reseal paradox. `audit.js` scans the **worktree** but seals **`git HEAD`**, so everything uncommitted at seal time was pre-baked drift: the commit carrying the fresh map got reported against the baseline it had just established (reproduced: seal at `9dc5c5e`, commit `b9b8174`, 2 warnings about the reseal's own files). "Freshly re-sealed, clean" was structurally unreachable, which trains people to ignore warnings. Now a changed path whose content still matches `sealed_dirty:` drops to INFO. Matched by **content**, never by commit membership — membership-based suppression would stay suppressed after a later real edit, a silent false negative. Skipped under `--since` / `--files` / stdin, where the baseline is a different ref.
+- **`bin/lib/sync-exclude-dirs.js`** — generates the exclusion-dirs sentence in `SKILL.md` from `EXCLUDE_DIRS`, with `--check` (CI) and `--fix`. CRLF-normalized, so the gate cannot pass on the runner and fail on a Windows worktree.
+- **`.github/workflows/ci.yml`** — runs the sync check and both self-tests on push and PR. They previously ran **nowhere**; `release.yml` was the only workflow. Deliberately does *not* gate on `.doc-governance/map.md` freshness: any `.md` edit changes the inventory, so that check would sit permanently red.
+- **Four self-test cases** in `bin/lib/self-test-update.js`: version drift crossing a universe change (WARNING), version drift not crossing one (INFO), the re-seal repro (clean commit **and** a later genuine edit warning again), and `sync-exclude-dirs` in both directions.
+
+### Fixed
+- **`SKILL.md` exclusion list was two weeks stale** — it omitted `.agents`, `.claude` and `graphify-out`, added to `EXCLUDE_DIRS` in 0.7.0. `CLAUDE.md` carried the same stale copy. The list lives in prose rather than as path-refs, so the skill provably could not flag it — precisely the case its own `## Known Limitations` describes. `SKILL.md` is now generated from the code and `CLAUDE.md` points at it instead of duplicating it.
+- **`README.md` update-mode example** showed the pre-0.6.0 report shape (`- doc:` / `referenced_code_changed:`), wrong for three releases. Same stale shape in `SKILL.md`'s Update Mode prose. Both now show `code_file:` / `affected_docs:` / `diff_sample:`.
+- **`parseMap` treated a missing SHA as the literal string `(none)`**, which then failed `isSafeGitRef` and crashed update mode outside a git repo. Now normalized to `null`.
+- **git's `core.autocrlf` warnings no longer bury the report on Windows.** Every read-only git query in `bin/update.js` and `bin/lib/diff-classify.js` now discards stderr — one "LF will be replaced by CRLF" line per changed file was printed above the output, which made a zero-warning run look alarming. Both call sites already discarded failures in their `catch`, so no diagnostic is lost.
+
+### Changed
+- **`release.sh` re-seals the baseline on every release** — runs `node bin/audit.js` *after* the version seds and the CHANGELOG rewrite, then commits `.doc-governance/map.md` with the release. Order is load-bearing: the still-uncommitted version files land in `sealed_dirty:`, so the release commit reports zero warnings. This repo stops needing manual attention to the very bug the skill detects, and the release pipeline doubles as the end-to-end test of `carried_from_seal`.
+- **Auto-bootstrapped maps record the real `TOOL_VERSION`** instead of the `update-bootstrap` sentinel, which nothing consumed and which defeated the new version guard. The bootstrap fact is still surfaced by the existing `baseline_auto_sealed` INFO.
+- **`RELEASE_CHECKLIST.md`** gains the version/changelog steps it never had (though `release.sh` has always treated `SKILL.md` `version:` as load-bearing), the generated-content checks, and a baseline-integrity section.
+
+### Notes
+- The version-drift WARNING is intentionally blocking. One re-seal clears it permanently, and until then every per-file result in the report is measured against the wrong file set.
+- `git hash-object` skips clean filters, so under `core.autocrlf=true` these hashes do not equal the committed blob. Irrelevant by construction: both the seal side and the check side hash raw worktree bytes through the same helper.
+
 ## [0.8.0] - 2026-07-24
 
 ### Added

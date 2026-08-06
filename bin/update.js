@@ -7,8 +7,8 @@ const path = require('path');
 const { scanRepo, renderMap } = require('./lib/scan');
 const { classifyFileDiff } = require('./lib/diff-classify');
 const { loadIgnore } = require('./lib/ignore');
-
-const BOOTSTRAP_TOOL_VERSION = 'update-bootstrap';
+const { DELETED, collectDirty, hashPaths } = require('./lib/dirty');
+const { TOOL_VERSION, parseSemver, crossedUniverseVersions } = require('./lib/version');
 
 function findRepoRoot() {
   try {
@@ -31,15 +31,28 @@ function parseArgs(argv) {
 }
 
 function parseMap(text) {
-  const map = { sealedSha: null, sealedAt: null, docs: [] };
+  const map = { sealedSha: null, sealedAt: null, toolVersion: null, sealedDirty: new Map(), docs: [] };
   const lines = text.split(/\r?\n/);
   let i = 0;
+  let headerSection = null;
   for (; i < lines.length; i++) {
     const line = lines[i];
     let m;
-    if ((m = /^sealed_sha:\s*(.+)$/.exec(line))) map.sealedSha = m[1].trim();
-    else if ((m = /^sealed_at:\s*(.+)$/.exec(line))) map.sealedAt = m[1].trim();
-    else if (/^## Inventory\s*$/.test(line)) { i++; break; }
+    if ((m = /^sealed_sha:\s*(.+)$/.exec(line))) {
+      const sha = m[1].trim();
+      map.sealedSha = sha === '(none)' ? null : sha;
+      headerSection = null;
+    } else if ((m = /^sealed_at:\s*(.+)$/.exec(line))) {
+      map.sealedAt = m[1].trim();
+      headerSection = null;
+    } else if ((m = /^tool_version:\s*(.+)$/.exec(line))) {
+      map.toolVersion = m[1].trim();
+      headerSection = null;
+    } else if (/^sealed_dirty:\s*(\[\])?\s*$/.test(line)) {
+      headerSection = 'sealed_dirty';
+    } else if (headerSection === 'sealed_dirty' && (m = /^  - (\S+) (.+)$/.exec(line))) {
+      map.sealedDirty.set(m[2].trim(), m[1]);
+    } else if (/^## Inventory\s*$/.test(line)) { i++; break; }
   }
   let current = null;
   let section = null;
@@ -83,16 +96,19 @@ function readStdinSync() {
   }
 }
 
-// Returns [{ status, path, oldPath? }]. status: M | A | D | R | C | T.
+// Returns { entries: [{ status, path, oldPath? }], source }. status: M|A|D|R|C|T.
+// `source` tells the caller whether the diff really came from the sealed
+// baseline — sealed_dirty is only meaningful against that ref.
 function getChangedEntries({ args, sealedSha, root }) {
   if (args.files) {
-    return args.files.map(p => ({ status: 'M', path: p }));
+    return { entries: args.files.map(p => ({ status: 'M', path: p })), source: 'files' };
   }
   const stdinFiles = readStdinSync();
   if (stdinFiles) {
-    return stdinFiles.map(p => ({ status: 'M', path: p }));
+    return { entries: stdinFiles.map(p => ({ status: 'M', path: p })), source: 'stdin' };
   }
   const baseRef = args.since || sealedSha || 'HEAD';
+  const source = args.since ? 'since' : 'sealed';
   if (!isSafeGitRef(baseRef)) {
     throw new Error('unsafe git ref: ' + baseRef);
   }
@@ -101,10 +117,11 @@ function getChangedEntries({ args, sealedSha, root }) {
     out = execFileSync(
       'git',
       ['diff', '--name-status', '--find-renames', baseRef],
-      { cwd: root, encoding: 'utf8' }
+      // stderr ignored — see the note in lib/diff-classify.js.
+      { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
     );
   } catch {
-    return [];
+    return { entries: [], source };
   }
   const entries = [];
   for (const raw of out.split(/\r?\n/)) {
@@ -120,7 +137,7 @@ function getChangedEntries({ args, sealedSha, root }) {
       entries.push({ status: statusLetter, path: parts[1] });
     }
   }
-  return entries;
+  return { entries, source };
 }
 
 function pathsMatch(codeRef, changed) {
@@ -130,6 +147,61 @@ function pathsMatch(codeRef, changed) {
   const changedAsDir = changed.endsWith('/') ? changed : changed + '/';
   if (codeRef.startsWith(changedAsDir)) return true;
   return false;
+}
+
+// The map header has always recorded which tool version sealed it; until 0.9.0
+// nothing read it back. A baseline sealed across a scan-universe change reports
+// a different file set than the running tool would — silently, and differently
+// per machine when two cached copies of the skill coexist.
+function checkBaselineVersion({ mapToolVersion, running, hasIgnoreFile }) {
+  if (mapToolVersion === running) return null;
+  if (!parseSemver(mapToolVersion)) {
+    return {
+      kind: 'baseline_version_unknown',
+      severity: 'info',
+      sealedWith: mapToolVersion || '(absent)',
+      running,
+      crossed: [],
+    };
+  }
+  const crossed = crossedUniverseVersions(mapToolVersion, running, { hasIgnoreFile });
+  return {
+    kind: 'baseline_version_drift',
+    severity: crossed.length ? 'warning' : 'info',
+    sealedWith: mapToolVersion,
+    running,
+    crossed,
+  };
+}
+
+// audit.js scans the worktree but seals HEAD, so anything uncommitted at seal
+// time reappears in the next diff — including the commit that carries the map
+// itself. A path is "carried" when its content is still byte-identical to what
+// the baseline scan already saw. Matching on CONTENT, not on commit membership:
+// a path suppressed by membership would stay suppressed after a later real
+// edit, which is a silent false negative in a governance tool.
+function markCarriedFromSeal({ codeChanged, mdChanged, sealedDirty, root }) {
+  const empty = { codeChanged, mdChanged, carried: [] };
+  if (!sealedDirty || sealedDirty.size === 0) return empty;
+  const candidates = [...codeChanged.map(c => c.path), ...mdChanged].filter(p => sealedDirty.has(p));
+  if (!candidates.length) return empty;
+  const current = hashPaths(root, candidates);
+  const carried = new Set();
+  for (const p of candidates) {
+    const sealed = sealedDirty.get(p);
+    const now = current.get(p);
+    if (sealed === DELETED) {
+      if (!now) carried.add(p);
+    } else if (now && now === sealed) {
+      carried.add(p);
+    }
+  }
+  if (!carried.size) return empty;
+  return {
+    codeChanged: codeChanged.filter(c => !carried.has(c.path)),
+    mdChanged: mdChanged.filter(p => !carried.has(p)),
+    carried: [...carried].sort(),
+  };
 }
 
 function classifyEntries(entries, ignore) {
@@ -196,8 +268,29 @@ function classifyRenamesAgainstDocs(renames, mapDocs) {
   });
 }
 
+function versionLines(v) {
+  const out = ['  - ' + v.kind];
+  out.push('    sealed_with: ' + v.sealedWith);
+  out.push('    running: ' + v.running);
+  for (const c of v.crossed) {
+    out.push('    universe_changed: ' + c.version + ' (' + c.reason + ')');
+  }
+  out.push('    reason: ' + (
+    v.kind === 'baseline_version_unknown'
+      ? 'baseline header carries no parseable tool version; scan universe cannot be compared'
+      : v.crossed.length
+      ? 'baseline maps a different set of files than this tool scans'
+      : 'baseline was sealed by a different tool version'
+  ));
+  out.push('    suggested_action: re-seal (node bin/audit.js) and commit .doc-governance/map.md');
+  return out;
+}
+
 function renderReport(opts) {
-  const { map, args, entries, changesByFile, mdChanged, renamesReport, autoBootstrapped } = opts;
+  const {
+    map, args, entries, changesByFile, mdChanged, renamesReport, autoBootstrapped,
+    versionCheck, carried,
+  } = opts;
   const range = args.files
     ? '(--files)'
     : args.since
@@ -209,12 +302,16 @@ function renderReport(opts) {
   const warnings = changesByFile.filter(c => c.kind === 'substantive' && c.unsyncedDocs.length > 0);
   const alreadySynced = changesByFile.filter(c => c.kind === 'substantive' && c.unsyncedDocs.length === 0 && c.alreadyTouchedDocs.length > 0);
   const trivials = changesByFile.filter(c => c.kind !== 'substantive');
+  const versionWarning = versionCheck && versionCheck.severity === 'warning';
+  const versionInfo = versionCheck && versionCheck.severity === 'info';
   const criticalCount = 0;
-  const warningCount = warnings.length;
+  const warningCount = warnings.length + (versionWarning ? 1 : 0);
   const infoCount =
     trivials.length +
     alreadySynced.length +
     renamesReport.length +
+    carried.length +
+    (versionInfo ? 1 : 0) +
     (mdChanged.length > 0 ? 1 : 0) +
     (autoBootstrapped ? 1 : 0);
 
@@ -237,6 +334,9 @@ function renderReport(opts) {
   lines.push('');
 
   lines.push('WARNING (' + warningCount + '):');
+  // Repo-wide finding, so it leads: if the baseline measures a different file
+  // set, every per-file result below it is suspect.
+  if (versionWarning) for (const l of versionLines(versionCheck)) lines.push(l);
   for (const c of warnings) {
     lines.push('  - code_file: ' + c.path + ' (kind: substantive)');
     lines.push('    affected_docs: [' + c.unsyncedDocs.join(', ') + ']');
@@ -253,6 +353,12 @@ function renderReport(opts) {
 
   lines.push('');
   lines.push('INFO (' + infoCount + '):');
+  if (versionInfo) for (const l of versionLines(versionCheck)) lines.push(l);
+  for (const p of carried) {
+    lines.push('  - carried_from_seal: ' + p);
+    lines.push('    reason: content is byte-identical to what the baseline scan already saw');
+    lines.push('    suggested_action: none');
+  }
   if (autoBootstrapped) {
     lines.push('  - baseline_auto_sealed: first run, sealed to ' + (map.sealedSha || '(no-git)'));
     lines.push('    suggested_action: commit .doc-governance/map.md to persist the baseline');
@@ -303,7 +409,8 @@ function bootstrapMap(root, mapPath) {
     sealedSha,
     sealedAt: new Date().toISOString(),
     docs,
-    toolVersion: BOOTSTRAP_TOOL_VERSION,
+    toolVersion: TOOL_VERSION,
+    sealedDirty: collectDirty(root),
   });
   fs.mkdirSync(path.dirname(mapPath), { recursive: true });
   fs.writeFileSync(mapPath, content);
@@ -320,9 +427,22 @@ function main() {
   const args = parseArgs(process.argv.slice(2));
   const map = parseMap(fs.readFileSync(mapPath, 'utf8'));
 
-  const entries = getChangedEntries({ args, sealedSha: map.sealedSha, root });
+  const { entries, source } = getChangedEntries({ args, sealedSha: map.sealedSha, root });
   const ignore = loadIgnore(root);
-  const { codeChanged, mdChanged, renames } = classifyEntries(entries, ignore);
+  const classified = classifyEntries(entries, ignore);
+  const { renames } = classified;
+
+  // sealed_dirty is measured against sealed_sha; under --since/--files/stdin the
+  // baseline is a different ref, so carrying would suppress the wrong paths.
+  const carry = source === 'sealed'
+    ? markCarriedFromSeal({
+        codeChanged: classified.codeChanged,
+        mdChanged: classified.mdChanged,
+        sealedDirty: map.sealedDirty,
+        root,
+      })
+    : { codeChanged: classified.codeChanged, mdChanged: classified.mdChanged, carried: [] };
+  const { codeChanged, mdChanged, carried } = carry;
   const mdChangedSet = new Set(mdChanged);
 
   const changesByFile = buildChangesByFile({
@@ -333,9 +453,15 @@ function main() {
     mdChangedSet,
   });
   const renamesReport = classifyRenamesAgainstDocs(renames, map.docs);
+  const versionCheck = autoBootstrapped ? null : checkBaselineVersion({
+    mapToolVersion: map.toolVersion,
+    running: TOOL_VERSION,
+    hasIgnoreFile: fs.existsSync(path.join(root, '.doc-governance', 'ignore')),
+  });
 
   const rendered = renderReport({
     map, args, entries, changesByFile, mdChanged, renamesReport, autoBootstrapped,
+    versionCheck, carried,
   });
   console.log(rendered.text);
 

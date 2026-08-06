@@ -3,9 +3,22 @@
 Use this checklist before publishing a new tag.
 
 ## Discovery and Metadata
-- [ ] `SKILL.md` contains valid YAML frontmatter (`name`, `description`).
+- [ ] `SKILL.md` contains valid YAML frontmatter (`name`, `description`, `version`).
 - [ ] Skill name is stable and canonical (`doc-governance-skill`).
 - [ ] Description clearly states when to use and when not to use the skill.
+
+## Version and Changelog
+`release.sh` reads `SKILL.md` `version:` and honors it when it is higher than the auto-bump, so a manual bump must land in both files or the release ships mismatched.
+- [ ] `SKILL.md` `version:` and `bin/lib/version.js` `TOOL_VERSION` agree.
+- [ ] `bin/lib/version.js` `TOOL_VERSION` is still a single-line, single-quoted, semicolon-terminated declaration (`release.sh` rewrites it with `sed`; reformatting breaks releases silently).
+- [ ] `CHANGELOG.md` has a hand-written section for this version. `release.sh` skips its auto-prepend when the section already exists.
+- [ ] If this release changed `EXCLUDE_DIRS` or ignore semantics, `SCAN_UNIVERSE_VERSIONS` in `bin/lib/version.js` has a matching entry — otherwise consumers' stale baselines will not be flagged.
+
+## Generated Content and CI
+- [ ] `node bin/lib/sync-exclude-dirs.js --check` exits 0 (the exclusion list in `SKILL.md` is generated from `EXCLUDE_DIRS`; never hand-edit it).
+- [ ] `node bin/lib/diff-classify.self-test.js` passes.
+- [ ] `node bin/lib/self-test-update.js` passes all cases.
+- [ ] CI (`.github/workflows/ci.yml`) is green on the release candidate.
 
 ## Documentation Quality
 - [ ] `README.md` reflects current behavior and install methods.
@@ -26,6 +39,11 @@ Use this checklist before publishing a new tag.
 - [ ] `node bin/update.js` on a clean tree exits 0 with `SUMMARY: 0 critical, 0 warnings, 0 info`.
 - [ ] `node bin/update.js` after touching a code path referenced by any doc reports at least one Warning and exits 1.
 - [ ] `install.sh` and `install.ps1` copy `bin/` alongside `SKILL.md` and `templates/`; installed `audit.js` runs from `.ai/skills/doc-governance-skill/bin/`.
+
+## Baseline Integrity (v0.9+)
+- [ ] `.doc-governance/map.md` header carries `tool_version:` equal to this release and a `sealed_dirty:` block (or `sealed_dirty: []` on a clean tree).
+- [ ] Re-seal with pending changes, commit map + changes together, then `node bin/update.js` → 0 warnings, with the committed paths listed as `carried_from_seal`. (`release.sh` does exactly this on every release; a red result here means the release commit will report itself as drift.)
+- [ ] Hand-edit a scratch copy's `tool_version:` to a pre-0.7.0 value → `node bin/update.js` reports `baseline_version_drift` with `universe_changed:` and exits 1.
 
 ## Auto-Bootstrap Smoke (v0.3+)
 In a temporary repo without `.doc-governance/map.md`:

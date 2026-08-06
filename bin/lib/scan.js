@@ -94,16 +94,25 @@ function scanRepo(root) {
   return docs;
 }
 
-function renderMap({ sealedSha, sealedAt, docs, toolVersion }) {
+function renderMap({ sealedSha, sealedAt, docs, toolVersion, sealedDirty }) {
   const lines = [
     '<!-- doc-governance:map v1 -->',
     `sealed_sha: ${sealedSha || '(none)'}`,
     `sealed_at: ${sealedAt}`,
     `tool_version: ${toolVersion}`,
-    '',
-    '## Inventory',
-    '',
   ];
+  // Paths whose worktree content the inventory above already reflects but
+  // sealed_sha does not. Hash-first so paths containing spaces stay parseable.
+  // Additive to the v1 format: an older parser skips these lines harmlessly.
+  if (sealedDirty && sealedDirty.length) {
+    lines.push('sealed_dirty:');
+    for (const d of sealedDirty) lines.push(`  - ${d.hash} ${d.path}`);
+  } else {
+    lines.push('sealed_dirty: []');
+  }
+  lines.push('');
+  lines.push('## Inventory');
+  lines.push('');
   for (const doc of docs) {
     lines.push(`### ${doc.path}`);
     lines.push(`title: ${doc.title || '(untitled)'}`);
@@ -128,4 +137,4 @@ function renderMap({ sealedSha, sealedAt, docs, toolVersion }) {
   return lines.join('\n');
 }
 
-module.exports = { scanRepo, renderMap };
+module.exports = { scanRepo, renderMap, EXCLUDE_DIRS };

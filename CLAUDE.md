@@ -10,10 +10,14 @@ An installable skill (`doc-governance-skill`) for the skills.sh ecosystem. It ro
 
 The runtime is two Node scripts under `bin/`, no npm dependencies, no `package.json`.
 
-- **Audit** — `node bin/audit.js`: scans every `*.md` (skipping `.git`, `node_modules`, `dist`, `build`, `.next`, `target`, `vendor`, `.venv`, `venv`, `.doc-governance`, `.ai`), extracts title / H1–H3 headings / code refs, writes `.doc-governance/map.md` sealed with `git rev-parse HEAD`. Heavy, once-per-baseline. Commit the map.
-- **Update** — `node bin/update.js`: reads sealed SHA from the map, runs `git diff --name-only <sha>` (working-tree — catches committed + uncommitted), matches changed paths against `code_refs` per doc, emits a `DOC_GOVERNANCE_UPDATE:` report. Exit 1 if any Warning. Overrides: `--since <ref>`, `--files a,b,c`, or stdin (`git diff --name-only | update.js`).
+- **Audit** — `node bin/audit.js`: scans every `*.md` (skipped dirs come from `EXCLUDE_DIRS` in `bin/lib/scan.js` — the prose copy in `SKILL.md` is **generated**, never hand-edited), extracts title / H1–H3 headings / code refs, writes `.doc-governance/map.md` sealed with `git rev-parse HEAD`. Heavy, once-per-baseline. Commit the map.
+- **Update** — `node bin/update.js`: reads sealed SHA, `tool_version:` and `sealed_dirty:` from the map, runs `git diff --name-only <sha>` (working-tree — catches committed + uncommitted), matches changed paths against `code_refs` per doc, emits a `DOC_GOVERNANCE_UPDATE:` report. Exit 1 if any Warning. Overrides: `--since <ref>`, `--files a,b,c`, or stdin (`git diff --name-only | update.js`).
 
-Shared scanner: `bin/lib/scan.js` (heading + backtick-path + fenced `path=` extraction).
+Shared libs: `bin/lib/scan.js` (heading + backtick-path + fenced `path=` extraction), `bin/lib/dirty.js` (worktree content hashes, used by both modes so they hash identically), `bin/lib/version.js` (`TOOL_VERSION` + `SCAN_UNIVERSE_VERSIONS`).
+
+**`audit.js` scans the worktree but seals `HEAD`.** That gap is why `sealed_dirty:` exists: it records the content hash of everything uncommitted at seal time, so `update.js` can tell "already in the baseline scan" (`carried_from_seal`, INFO) from real post-baseline drift. Matching is by **content**, never by commit membership — membership-based suppression stays suppressed after a later real edit, which is a silent false negative. Do not "simplify" it back.
+
+**When changing `EXCLUDE_DIRS` or ignore semantics, append to `SCAN_UNIVERSE_VERSIONS` in `bin/lib/version.js`.** That list is what turns a version mismatch into a blocking Warning instead of a shrug. Skipping it recreates the bug: a baseline that silently maps a different set of files than the running tool scans.
 
 ## Install Scripts
 
@@ -51,7 +55,9 @@ Bump rules from commit messages since last tag:
 - `[minor]` → minor
 - otherwise → patch
 
-If `SKILL.md`'s manually-pinned `version:` is higher than the auto-bump, the pinned version wins. The script updates three places in lockstep: `SKILL.md` `version:`, `bin/audit.js` `TOOL_VERSION`, and `CHANGELOG.md`. **When bumping versions manually, update all three.**
+If `SKILL.md`'s manually-pinned `version:` is higher than the auto-bump, the pinned version wins. The script updates three places in lockstep: `SKILL.md` `version:`, `bin/lib/version.js` `TOOL_VERSION`, and `CHANGELOG.md`. **When bumping versions manually, update all three.**
+
+The script also runs `node bin/audit.js` and commits the refreshed `.doc-governance/map.md` with the release. It runs *after* the version seds and the CHANGELOG rewrite on purpose — `audit.js` then records those still-uncommitted files in `sealed_dirty:`, so the release commit lands with zero warnings instead of reporting itself as drift. This is what keeps the repo from repeating the stale-baseline bug the skill exists to detect; do not reorder those steps.
 
 ## Conventions
 

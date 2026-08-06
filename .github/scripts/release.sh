@@ -49,12 +49,12 @@ fi
 echo "Releasing $NEW_TAG (bump: $BUMP, from $LAST_TAG)"
 
 sed -i "s/^version: .*/version: $NEW_VERSION/" SKILL.md
-sed -i "s/const TOOL_VERSION = '[^']*';/const TOOL_VERSION = '$NEW_VERSION';/" bin/audit.js
+sed -i "s/const TOOL_VERSION = '[^']*';/const TOOL_VERSION = '$NEW_VERSION';/" bin/lib/version.js
 
 ENTRY_BODY=$(echo "$COMMITS" | sed 's/^/- /')
 
 # Idempotent: if CHANGELOG already has this version (manual bump upstream),
-# skip the prepend. sed on SKILL.md and bin/audit.js is already idempotent.
+# skip the prepend. sed on SKILL.md and bin/lib/version.js is already idempotent.
 if grep -q "^## \[$NEW_VERSION\]" CHANGELOG.md; then
   echo "CHANGELOG already has [$NEW_VERSION] entry. Skipping prepend."
 else
@@ -68,7 +68,14 @@ else
   } > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
 fi
 
-git add SKILL.md bin/audit.js CHANGELOG.md
+# Re-seal the repo's own baseline. Runs AFTER the seds and the CHANGELOG
+# rewrite on purpose: audit.js records those still-uncommitted files in
+# sealed_dirty, so the release commit that carries them lands with zero
+# warnings instead of reporting itself as drift. Keeps this repo from
+# repeating the stale-baseline bug it exists to detect.
+node bin/audit.js
+
+git add SKILL.md bin/lib/version.js CHANGELOG.md .doc-governance/map.md
 if git diff --cached --quiet; then
   echo "Version files and CHANGELOG already at $NEW_VERSION. Tagging existing HEAD."
 else

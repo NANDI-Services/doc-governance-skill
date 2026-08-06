@@ -1,0 +1,37 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+
+      # No setup-node step on purpose: the runtime is zero-dependency plain
+      # Node and ubuntu-latest already ships a recent one. Nothing here needs
+      # a specific version, so pinning one would only add a moving part.
+
+      - name: Docs generated from code are in sync
+        run: node bin/lib/sync-exclude-dirs.js --check
+
+      - name: Diff classifier unit tests
+        run: node bin/lib/diff-classify.self-test.js
+
+      - name: Update-mode integration smokes
+        run: node bin/lib/self-test-update.js
+
+  # Deliberately NOT gated here: whether .doc-governance/map.md is current.
+  # Any .md edit changes the inventory, so that check would sit permanently red
+  # and train people to ignore it — the exact failure this release is fixing.
+  # release.sh re-seals the map on every release instead.

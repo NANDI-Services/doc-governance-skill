@@ -97,7 +97,10 @@ function classifyFileDiff({ root, sha, filePath }) {
     text = execFileSync(
       'git',
       ['diff', '--unified=3', '--no-color', sha, '--', filePath],
-      { cwd: root, encoding: 'utf8' }
+      // stderr ignored: under core.autocrlf git emits a "LF will be replaced by
+      // CRLF" line per file, which would bury the report. The catch below
+      // already discards failures, so nothing diagnostic is lost.
+      { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
     );
   } catch {
     return { kind: 'substantive', sample: [] };

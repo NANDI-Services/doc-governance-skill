@@ -1,9 +1,8 @@
 <!-- doc-governance:map v1 -->
-sealed_sha: 0839e38f6dabb1b06069ae9b6ddd1ab6e25d06a3
-sealed_at: 2026-08-06T21:05:59.709Z
-tool_version: 0.9.2
-sealed_dirty:
-  - ff57f553bb256c1976e5733ce2850aded5247592 README.md
+sealed_sha: 6da80be855d232c0108cbbbd5d0792d23d5bf4eb
+sealed_at: 2026-08-06T21:20:30.704Z
+tool_version: 0.9.3
+sealed_dirty: []
 
 ## Inventory
 
@@ -21,6 +20,9 @@ code_refs:
 title: Changelog
 headings:
   - H1: Changelog
+  - H2: [0.9.3] - 2026-08-06
+  - H3: Added
+  - H3: Notes
   - H2: [0.9.2] - 2026-08-06
   - H3: Added
   - H3: Fixed

@@ -13,7 +13,11 @@ The runtime is two Node scripts under `bin/`, no npm dependencies, no `package.j
 - **Audit** — `node bin/audit.js`: scans every `*.md` (skipped dirs come from `EXCLUDE_DIRS` in `bin/lib/scan.js` — the prose copy in `SKILL.md` is **generated**, never hand-edited), extracts title / H1–H3 headings / code refs, writes `.doc-governance/map.md` sealed with `git rev-parse HEAD`. Heavy, once-per-baseline. Commit the map.
 - **Update** — `node bin/update.js`: reads sealed SHA, `tool_version:` and `sealed_dirty:` from the map, runs `git diff --name-only <sha>` (working-tree — catches committed + uncommitted), matches changed paths against `code_refs` per doc, emits a `DOC_GOVERNANCE_UPDATE:` report. Exit 1 if any Warning. Overrides: `--since <ref>`, `--files a,b,c`, or stdin (`git diff --name-only | update.js`).
 
-Shared libs: `bin/lib/scan.js` (heading + backtick-path + fenced `path=` extraction), `bin/lib/dirty.js` (worktree content hashes, used by both modes so they hash identically), `bin/lib/version.js` (`TOOL_VERSION` + `SCAN_UNIVERSE_VERSIONS`).
+- **Which copy** — `node bin/which.js`: enumerates every installed copy (plugin cache, `~/.claude/skills`, `.ai/`, `.agents/`, plus its own root), dedupes by `realpath`, and prints the one with the **highest version**. `--verbose` lists them all and warns when several coexist.
+
+Shared libs: `bin/lib/scan.js` (heading + backtick-path + fenced `path=` extraction), `bin/lib/dirty.js` (worktree content hashes, used by both modes so they hash identically), `bin/lib/version.js` (`TOOL_VERSION` + `SCAN_UNIVERSE_VERSIONS` + `versionLine()`).
+
+**`SKILL.md` § Root Invocation Behavior step 1 is the canonical root-discovery block.** `commands/review.md` points at it and must never re-inline the snippet. Resolution goes through `bin/which.js` because the old `find … | head -1` returned whatever the filesystem listed first, not the newest — with two copies installed that is a coin flip, and it let an agent read one version's `SKILL.md` while executing another's `bin/`. Note the asymmetry this protects: the 0.9.0 baseline guard lives *in the code*, so it only fires if the copy that runs actually has it. Resolving the right copy is a precondition for the guard, not a nicety.
 
 **`audit.js` scans the worktree but seals `HEAD`.** That gap is why `sealed_dirty:` exists: it records the content hash of everything uncommitted at seal time, so `update.js` can tell "already in the baseline scan" (`carried_from_seal`, INFO) from real post-baseline drift. Matching is by **content**, never by commit membership — membership-based suppression stays suppressed after a later real edit, which is a silent false negative. Do not "simplify" it back.
 
@@ -55,7 +59,7 @@ Bump rules from commit messages since last tag:
 - `[minor]` → minor
 - otherwise → patch
 
-If `SKILL.md`'s manually-pinned `version:` is higher than the auto-bump, the pinned version wins. The script updates three places in lockstep: `SKILL.md` `version:`, `bin/lib/version.js` `TOOL_VERSION`, and `CHANGELOG.md`. **When bumping versions manually, update all three.**
+If `SKILL.md`'s manually-pinned `version:` is higher than the auto-bump, the pinned version wins. The script updates four places in lockstep: `SKILL.md` `version:`, `bin/lib/version.js` `TOOL_VERSION`, `.claude-plugin/plugin.json` `version`, and `CHANGELOG.md`. **When bumping versions manually, update all four** — `demoVersionFilesAgree` in `bin/lib/self-test-update.js` fails the build if the first three disagree.
 
 The script also runs `node bin/audit.js` and commits the refreshed `.doc-governance/map.md` with the release. It runs *after* the version seds and the CHANGELOG rewrite on purpose — `audit.js` then records those still-uncommitted files in `sealed_dirty:`, so the release commit lands with zero warnings instead of reporting itself as drift. This is what keeps the repo from repeating the stale-baseline bug the skill exists to detect; do not reorder those steps.
 

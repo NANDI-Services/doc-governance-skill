@@ -8,7 +8,7 @@ const { scanRepo, renderMap } = require('./lib/scan');
 const { classifyFileDiff } = require('./lib/diff-classify');
 const { loadIgnore } = require('./lib/ignore');
 const { DELETED, collectDirty, hashPaths } = require('./lib/dirty');
-const { TOOL_VERSION, parseSemver, crossedUniverseVersions } = require('./lib/version');
+const { TOOL_VERSION, versionLine, parseSemver, crossedUniverseVersions } = require('./lib/version');
 
 function findRepoRoot() {
   try {
@@ -325,6 +325,13 @@ function renderReport(opts) {
   lines.push('DOC_GOVERNANCE_UPDATE:');
   lines.push('');
   lines.push('sealed_sha: ' + (map.sealedSha || '(none)'));
+  // Always present, not only on mismatch. Until 0.9.1 the running version
+  // appeared solely inside a drift entry, so in the normal case there was no
+  // way to tell which of several installed copies produced this report.
+  const baselineVersion = map.toolVersion || '(unknown)';
+  lines.push('tool_version: ' + TOOL_VERSION + (
+    baselineVersion === TOOL_VERSION ? '' : ' (baseline sealed with ' + baselineVersion + ')'
+  ));
   lines.push('diff_range: ' + range);
   lines.push('files_changed: ' + entries.length);
   lines.push('docs_affected: ' + docsAffected.size);
@@ -417,6 +424,12 @@ function bootstrapMap(root, mapPath) {
 }
 
 function main() {
+  // Before anything else: --version must not auto-bootstrap a baseline as a
+  // side effect of asking which copy is running.
+  if (process.argv.includes('--version')) {
+    console.log(versionLine());
+    return;
+  }
   const root = findRepoRoot();
   const mapPath = path.join(root, '.doc-governance', 'map.md');
   let autoBootstrapped = false;

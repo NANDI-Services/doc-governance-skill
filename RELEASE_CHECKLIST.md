@@ -8,9 +8,9 @@ Use this checklist before publishing a new tag.
 - [ ] Description clearly states when to use and when not to use the skill.
 
 ## Version and Changelog
-`release.sh` reads `SKILL.md` `version:` and honors it when it is higher than the auto-bump, so a manual bump must land in both files or the release ships mismatched.
-- [ ] `SKILL.md` `version:` and `bin/lib/version.js` `TOOL_VERSION` agree.
-- [ ] `bin/lib/version.js` `TOOL_VERSION` is still a single-line, single-quoted, semicolon-terminated declaration (`release.sh` rewrites it with `sed`; reformatting breaks releases silently).
+`release.sh` reads `SKILL.md` `version:` and honors it when it is higher than the auto-bump, so a manual bump must land in all three files or the release ships mismatched.
+- [ ] `SKILL.md` `version:`, `bin/lib/version.js` `TOOL_VERSION` and `.claude-plugin/plugin.json` `version` agree. (`node bin/lib/self-test-update.js` asserts this — `demoVersionFilesAgree`.)
+- [ ] `bin/lib/version.js` `TOOL_VERSION` is still a single-line, single-quoted, semicolon-terminated declaration, and `plugin.json` still has exactly one `version` key (`release.sh` rewrites both with `sed`; reformatting breaks releases silently).
 - [ ] `CHANGELOG.md` has a hand-written section for this version. `release.sh` skips its auto-prepend when the section already exists.
 - [ ] If this release changed `EXCLUDE_DIRS` or ignore semantics, `SCAN_UNIVERSE_VERSIONS` in `bin/lib/version.js` has a matching entry — otherwise consumers' stale baselines will not be flagged.
 
@@ -54,7 +54,7 @@ In a temporary repo without `.doc-governance/map.md`:
 ## Plugin Manifest (v0.4+)
 - [ ] `.claude-plugin/plugin.json` parses as valid JSON: `node -e "JSON.parse(require('fs').readFileSync('.claude-plugin/plugin.json','utf8'))"`.
 - [ ] `.claude-plugin/plugin.json` `name` matches `SKILL.md` `name:` (both `doc-governance-skill`).
-- [ ] `claude plugin validate .` passes (only acceptable warning: missing `version` field).
+- [ ] `claude plugin validate .` passes with **no warnings**. Both former warnings (missing `plugin.json` `version`, missing marketplace `description`) were fixed in 0.9.1 — a new warning means something regressed.
 - [ ] There is no `skills/` directory and no `skills` field in `plugin.json` — root `SKILL.md` must remain the auto-registered single skill. Do NOT re-add `commands/doc-governance-skill.md` (it would collide with the auto-register).
 - [ ] `commands/update.md` exists and describes the drift-check flow (runs `bin/update.js`).
 - [ ] `install.sh` and `install.ps1` copy `commands/` and `.claude-plugin/` guarded (`[ -d ]` / `Test-Path`).

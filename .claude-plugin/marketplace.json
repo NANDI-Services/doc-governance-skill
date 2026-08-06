@@ -1,5 +1,6 @@
 {
   "name": "nandi-services",
+  "description": "Skills de NANDI Services para Claude Code. Gobernanza de documentación y utilidades de repo.",
   "owner": {
     "name": "NANDI Services",
     "email": "contact@nandi.com.ar"

@@ -191,6 +191,15 @@ On the first run without `.doc-governance/map.md`, Update auto-creates the basel
 
 Update accepts optional overrides: `--since <ref>` (diff against a different git ref), `--files a,b,c` (skip git diff, use an explicit file list), or stdin (`git diff --name-only | update.js`).
 
+**Which copy am I running? (0.9.1).** Nothing stops several copies of the skill from coexisting — a plugin-cache entry that survived an upgrade, a user-level install, a vendored drop under `.ai/` or `.agents/`. They can be different versions, and the results differ accordingly.
+
+```bash
+node .ai/skills/doc-governance-skill/bin/update.js --version   # version + absolute path of this copy
+node .ai/skills/doc-governance-skill/bin/which.js --verbose    # every copy found, with a warning if versions differ
+```
+
+Every Update report also carries a `tool_version:` line in its header, so any output can be traced back to the copy that produced it. `bin/which.js` with no flags prints the copy that *should* run (highest version) — that is what the skill's own root-discovery step uses.
+
 **Baseline integrity (0.9.0).** Update compares the version that sealed the map against its own. If the gap crosses a release that changed which files get scanned, it fails with `baseline_version_drift` — the baseline is not just old, it maps a different set of files, and two installed copies of the skill will give different answers on the same repo. Re-sealing clears it permanently. Re-sealing is also safe to do mid-change: Audit records the content of everything uncommitted at seal time, so the commit that carries the new map reports `carried_from_seal`, not drift.
 
 Path note: both commands assume the skill installed at `.ai/skills/doc-governance-skill/` (per-repo default). Adjust to `~/.claude/skills/doc-governance-skill/bin/…` for a global install.

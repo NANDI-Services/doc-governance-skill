@@ -325,9 +325,81 @@ function demoSyncExcludeDirs() {
   }
 }
 
+// The root resolver. `find | head -1` returned whatever the filesystem listed
+// first, which is why an agent could read 0.9.0's SKILL.md and execute 0.8.0's
+// bin/. The candidate order below puts the OLD copy first on purpose — that is
+// the case the old command got wrong.
+function demoWhich() {
+  const script = path.join(__dirname, '..', 'which.js');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'doc-gov-which-'));
+
+  function plant(rel, version) {
+    const dir = path.join(tmp, rel);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(
+      path.join(dir, 'SKILL.md'),
+      '---\nname: doc-governance-skill\nversion: ' + version + '\n---\n'
+    );
+    return dir;
+  }
+
+  try {
+    const old = plant(path.join('plugins', 'cache', 'nandi-services', 'doc-governance-skill', 'aaa111'), '0.8.0');
+    const fresh = plant(path.join('skills', 'doc-governance-skill'), '0.9.9');
+
+    const picked = run('node', [script, '--root', tmp], process.cwd()).trim();
+    assert.strictEqual(
+      fs.realpathSync(picked), fs.realpathSync(fresh),
+      'expected the highest version to win, got ' + picked
+    );
+    assert(picked !== old, 'must not pick the first candidate listed');
+
+    const verbose = run('node', [script, '--root', tmp, '--verbose'], process.cwd());
+    assert(/0\.8\.0/.test(verbose) && /0\.9\.9/.test(verbose), 'verbose must list every copy\n---\n' + verbose);
+    assert(/<- selected/.test(verbose), 'verbose must mark the selected copy\n---\n' + verbose);
+    assert(
+      /warning: 2 copies installed across 2 versions/.test(verbose),
+      'coexisting versions must be surfaced\n---\n' + verbose
+    );
+
+    // No candidates -> exit 1, so the caller's `|| SKILL_ROOT=$ROOT` fallback fires.
+    let exited = 0;
+    try { run('node', [script, '--root', path.join(tmp, 'nope')], process.cwd()); }
+    catch (e) { exited = e.status; }
+    assert.strictEqual(exited, 1, 'expected exit 1 when no copy is found');
+
+    console.log('ok  which.js — picks the highest version and flags coexisting copies');
+  } finally {
+    try { fs.rmSync(tmp, { recursive: true, force: true }); } catch {}
+  }
+}
+
+// Three files now carry the version and release.sh rewrites each with its own
+// sed. Without this, a drifted one surfaces only during a release.
+function demoVersionFilesAgree() {
+  const repoRoot = path.join(__dirname, '..', '..');
+  const skill = fs.readFileSync(path.join(repoRoot, 'SKILL.md'), 'utf8');
+  const plugin = JSON.parse(fs.readFileSync(path.join(repoRoot, '.claude-plugin', 'plugin.json'), 'utf8'));
+  const frontmatter = /^version:\s*(.+)$/m.exec(skill);
+
+  assert(frontmatter, 'SKILL.md has no version: in frontmatter');
+  assert.strictEqual(
+    frontmatter[1].trim(), TOOL_VERSION,
+    'SKILL.md version (' + frontmatter[1].trim() + ') != bin/lib/version.js TOOL_VERSION (' + TOOL_VERSION + ')'
+  );
+  assert.strictEqual(
+    plugin.version, TOOL_VERSION,
+    'plugin.json version (' + plugin.version + ') != TOOL_VERSION (' + TOOL_VERSION + ')'
+  );
+
+  console.log('ok  version lockstep — SKILL.md, version.js and plugin.json agree');
+}
+
 demo();
 demoIgnore();
 demoVersionDrift();
 demoVersionDriftInfo();
 demoResealCarry();
 demoSyncExcludeDirs();
+demoWhich();
+demoVersionFilesAgree();

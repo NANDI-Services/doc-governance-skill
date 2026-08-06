@@ -1,8 +1,22 @@
 <!-- doc-governance:map v1 -->
-sealed_sha: f0658b37de6d4068747477c8b60ddb538a699dea
-sealed_at: 2026-08-06T05:30:59.748Z
-tool_version: 0.9.0
-sealed_dirty: []
+sealed_sha: 5a4ebb71d93baaadefcfcdaf5a93a577fb5f1406
+sealed_at: 2026-08-06T17:12:55.615Z
+tool_version: 0.9.1
+sealed_dirty:
+  - 9510756708cdc16055f24982e2a78c6ae931248b .claude-plugin/marketplace.json
+  - 9958a03b96893273d6c7ccd1173caa92df1ebf21 .claude-plugin/plugin.json
+  - fdb81d3434ee92b0f19e6b62f6a8cac1319143f0 .github/scripts/release.sh
+  - 4891a2ea54998c7a7e60d8f90ab75672f2b3ba19 CHANGELOG.md
+  - ae3d6a4d7b0139440fa46e1381f06ac8bc5d4655 CLAUDE.md
+  - 9bfe1a76c84df2bd25c5f29cdf45e6b7d9ea472e README.md
+  - 17e1cf7c28219d2490c8aaae16430112e3b1f260 RELEASE_CHECKLIST.md
+  - 3fccf5ee7964de727312d1292678835e6aa9c77e SKILL.md
+  - 8b50f72c36b5f87803b041c0f94f885a69ff2669 bin/audit.js
+  - 000cb59dfbf088455b932d86a122d86bf5654e30 bin/lib/self-test-update.js
+  - 1fd4aceb9d37dbae821e81834657032324dcfd32 bin/lib/version.js
+  - c8c2adf5b1a46adc9d25b26099904a1c70aa2ade bin/update.js
+  - f641f22d0ae04a73ca13eae6d4b407de06ddb466 bin/which.js
+  - 64f5521519ce7edefeb09d09961b9714a14d4317 commands/review.md
 
 ## Inventory
 
@@ -20,6 +34,9 @@ code_refs:
 title: Changelog
 headings:
   - H1: Changelog
+  - H2: [0.9.1] - 2026-08-06
+  - H3: Added
+  - H3: Changed
   - H2: [0.9.0] - 2026-08-06
   - H3: Added
   - H3: Fixed
@@ -75,10 +92,12 @@ headings:
 code_refs:
   - .agents
   - .agents/
+  - .ai/
   - .ai/skills/doc-governance-skill/
   - .bak
   - .claude
   - .claude-plugin/marketplace.json
+  - .claude-plugin/plugin.json
   - .claude/
   - .doc-governance/ignore
   - .doc-governance/map.md
@@ -109,6 +128,7 @@ code_refs:
   - bin/lib/sync-exclude-dirs.js
   - bin/lib/version.js
   - bin/update.js
+  - bin/which.js
   - commands/
   - commands/doc-governance-skill.md
   - commands/review.md
@@ -141,8 +161,11 @@ headings:
   - H2: Skills.sh Publishing (fallback path)
   - H2: Lessons Learned
 code_refs:
+  - .agents/
+  - .ai/
   - .claude-plugin/
   - .claude-plugin/marketplace.json
+  - .claude-plugin/plugin.json
   - .doc-governance/map.md
   - .github/scripts/release.sh
   - .github/workflows/release.yml
@@ -155,7 +178,9 @@ code_refs:
   - bin/
   - bin/lib/dirty.js
   - bin/lib/scan.js
+  - bin/lib/self-test-update.js
   - bin/lib/version.js
+  - bin/which.js
   - commands/
   - commands/doc-governance-skill.md
   - commands/review.md
@@ -231,6 +256,8 @@ headings:
   - H2: License
   - H2: Lessons Learned
 code_refs:
+  - .agents/
+  - .ai/
   - .ai/skills/doc-governance-skill/
   - .claude-plugin/marketplace.json
   - .claude-plugin/plugin.json
@@ -252,6 +279,7 @@ code_refs:
   - bin/audit.js
   - bin/lib/scan.js
   - bin/update.js
+  - bin/which.js
   - commands/
   - commands/review.md
   - commands/update.md
@@ -400,7 +428,6 @@ headings:
 code_refs:
   - .agents
   - .ai
-  - .ai/skills/doc-governance-skill
   - .ai/skills/doc-governance-skill/
   - .claude
   - .doc-governance/ignore
@@ -433,6 +460,7 @@ code_refs:
   - bin/lib/scan.js
   - bin/lib/sync-exclude-dirs.js
   - bin/update.js
+  - bin/which.js
   - chart.js
   - go.mod
   - install.sh
@@ -442,6 +470,7 @@ code_refs:
   - requirements.txt
   - templates/doc-governance-ignore.example
   - update.js
+  - which.js
 
 ### commands/review.md
 title: Doc Governance — Review (root flow)
@@ -452,11 +481,11 @@ headings:
   - H2: Resumen del flujo (referencia rápida)
   - H2: Diferencia con `:update`
 code_refs:
-  - .ai/skills/doc-governance-skill
   - .doc-governance/map.md
   - SKILL.md
   - bin/audit.js
   - bin/update.js
+  - bin/which.js
 
 ### commands/update.md
 title: Update Mode

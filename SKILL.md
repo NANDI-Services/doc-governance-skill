@@ -1,7 +1,7 @@
 ---
 name: doc-governance-skill
 description: Decide doc-impact after meaningful code, config, CI/CD, security, architecture, API, or workflow changes, route updates to the right files, and avoid activation for cosmetic-only or behavior-neutral edits.
-version: 0.9.0
+version: 0.9.1
 ---
 
 # Repo Doc Governance
@@ -201,8 +201,18 @@ test -f .doc-governance/map.md && echo "map exists" || echo "no map"
 
 **Si "no map"** (primer uso en este repo): NO sigas con los pasos 1-4 de abajo. Hacé exactamente esto:
 
-1. Ubicá el skill root con `find ~/.claude/plugins/cache/nandi-services/doc-governance-skill -name 'SKILL.md' -not -path '*/node_modules/*' | head -1 | xargs dirname` (fallback a `~/.claude/skills/doc-governance-skill` o `.ai/skills/doc-governance-skill`).
-2. Corré `node <skill-root>/bin/audit.js`.
+1. Ubicá el skill root — **este bloque es la fuente canónica; los slash-commands apuntan acá, no lo dupliques**:
+
+   ```bash
+   ROOT=$(find ~/.claude/plugins/cache/*/doc-governance-skill -name 'SKILL.md' -not -path '*/node_modules/*' 2>/dev/null | head -1 | xargs -r dirname)
+   [ -n "$ROOT" ] || ROOT=~/.claude/skills/doc-governance-skill
+   SKILL_ROOT=$(node "$ROOT/bin/which.js" 2>/dev/null) || SKILL_ROOT=$ROOT
+   ```
+
+   El primer paso es barato y deliberadamente tonto: sólo necesita encontrar *alguna* copia. La elección la hace `bin/which.js`, que enumera todas las instalaciones y devuelve **la de versión más alta**. Antes se usaba `find … | head -1` a secas, que devuelve lo primero que lista el filesystem — con dos copias conviviendo eso es una moneda al aire, y es el mecanismo exacto del incidente que motivó 0.9.0. Si la copia hallada es anterior a 0.9.1 y no tiene `which.js`, el `||` preserva el comportamiento viejo.
+
+   Ante cualquier duda sobre qué copia está corriendo: `node "$SKILL_ROOT/bin/which.js" --verbose` lista todas con su versión y avisa si conviven varias.
+2. Corré `node "$SKILL_ROOT/bin/audit.js"`.
 3. Emitir mensaje corto al user:
    > Baseline sellado en `.doc-governance/map.md` (SHA `<sha>`, N docs mapeados).
    > Commiteá: `git add .doc-governance/map.md && git commit -m "chore: seal doc-governance baseline"`

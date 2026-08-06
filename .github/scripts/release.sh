@@ -50,6 +50,8 @@ echo "Releasing $NEW_TAG (bump: $BUMP, from $LAST_TAG)"
 
 sed -i "s/^version: .*/version: $NEW_VERSION/" SKILL.md
 sed -i "s/const TOOL_VERSION = '[^']*';/const TOOL_VERSION = '$NEW_VERSION';/" bin/lib/version.js
+# plugin.json has exactly one "version" key, so an unanchored substitution is safe.
+sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW_VERSION\"/" .claude-plugin/plugin.json
 
 ENTRY_BODY=$(echo "$COMMITS" | sed 's/^/- /')
 
@@ -75,7 +77,7 @@ fi
 # repeating the stale-baseline bug it exists to detect.
 node bin/audit.js
 
-git add SKILL.md bin/lib/version.js CHANGELOG.md .doc-governance/map.md
+git add SKILL.md bin/lib/version.js .claude-plugin/plugin.json CHANGELOG.md .doc-governance/map.md
 if git diff --cached --quiet; then
   echo "Version files and CHANGELOG already at $NEW_VERSION. Tagging existing HEAD."
 else

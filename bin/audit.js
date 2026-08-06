@@ -3,7 +3,7 @@
 
 const { scanRepo, renderMap } = require('./lib/scan');
 const { collectDirty } = require('./lib/dirty');
-const { TOOL_VERSION } = require('./lib/version');
+const { TOOL_VERSION, versionLine } = require('./lib/version');
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -25,6 +25,10 @@ function getSealedSha(root) {
 }
 
 function main() {
+  if (process.argv.includes('--version')) {
+    console.log(versionLine());
+    return;
+  }
   const root = findRepoRoot();
   const docs = scanRepo(root);
   const sealedSha = getSealedSha(root);
@@ -40,6 +44,7 @@ function main() {
   const shortSha = sealedSha ? sealedSha.slice(0, 7) : '(no-git)';
   const carried = sealedDirty.length ? `, ${sealedDirty.length} uncommitted path(s) carried` : '';
   console.log(`Wrote ${docs.length} doc(s) to .doc-governance/map.md (SHA: ${shortSha}${carried})`);
+  console.log(`Sealed by ${versionLine()}`);
 }
 
 try {

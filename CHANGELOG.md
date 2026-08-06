@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.9.1] - 2026-08-06
+
+0.9.0 made a stale **baseline** impossible to miss. This closes the twin hole it left untouched: knowing **which copy of the skill is running**. Found by auditing a real install right after shipping 0.9.0.
+
+### Added
+- **`bin/which.js`** — enumerates every installed copy (plugin cache globbed by marketplace, `~/.claude/skills/`, `.ai/`, `.agents/`, plus its own root), dedupes by `fs.realpathSync`, and prints the one with the **highest version**. `--verbose` lists them all and warns when several coexist; exit 1 when none is found, so callers can fall back. Reuses `parseSemver` / `compareSemver` from `bin/lib/version.js` rather than reimplementing comparison. Why: `SKILL.md`'s root-discovery step used `find … | head -1`, which returns whatever the filesystem lists first — not the newest. Verified on a live machine: two copies coexisted (`~/.claude/skills/…` at 0.9.0 via symlink, plugin cache at 0.8.0) and `head -1` resolved to **0.8.0**, so the agent read 0.9.0's `SKILL.md` and executed 0.8.0's `bin/`. Same mechanism as the SGG incident. Note the asymmetry this protects: the 0.9.0 baseline guard lives in the code, so it only fires if the copy that runs has it — resolving the right copy is a precondition for the guard, not a nicety.
+- **`--version` on `bin/audit.js` and `bin/update.js`** — prints `doc-governance-skill <version> (<absolute root>)`. The path is the half that matters: with several copies installed, a version number alone does not say which one produced the output. Handled before any other work, so asking never auto-bootstraps a baseline as a side effect.
+- **`tool_version:` in the Update report header**, always. Until now the running version appeared *only* inside a drift entry, so in the normal case there was no way to trace a report back to its copy. Shows `tool_version: 0.9.1` when baseline and tool agree, `tool_version: 0.9.1 (baseline sealed with 0.8.0)` when they do not. `bin/audit.js` likewise prints the sealing copy on completion.
+- **Two self-test cases**: `demoWhich` (plants an old and a new copy in a tmpdir with the *old one first* — the exact ordering `head -1` got wrong — and asserts the new one wins, that `--verbose` flags the coexistence, and that an empty tree exits 1) and `demoVersionFilesAgree` (the three version files must match).
+
+### Changed
+- **`.claude-plugin/plugin.json` carries `version`**, so `claude plugin list` stops reporting `Version: unknown`. `release.sh` rewrites it alongside `SKILL.md` and `bin/lib/version.js` — three `sed`s in lockstep now, guarded by `demoVersionFilesAgree`.
+- **`.claude-plugin/marketplace.json` gained a `description`.** With that and the `version` above, `claude plugin validate .` passes with **zero warnings** (it reported two). `RELEASE_CHECKLIST.md` now demands a clean run instead of tolerating a known warning.
+- **`commands/review.md` no longer duplicates the root-discovery snippet** — it points at `SKILL.md`, which is the canonical block. Same single-source treatment `EXCLUDE_DIRS` got in 0.9.0; the duplicated copy was already drifting.
+
 ## [0.9.0] - 2026-08-06
 
 Baseline integrity release. All three items come from a real session in a consumer repo (SGG, 2026-07-26 → 2026-08-06).

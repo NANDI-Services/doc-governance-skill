@@ -16,7 +16,7 @@ test -f .doc-governance/map.md && echo "map exists" || echo "no map"
 
 **Si "no map"**: es el bootstrap del baseline. NO leas `SKILL.md`. NO sigas con el flujo de review. Hacé exactamente esto:
 
-1. Ubicá el skill root con `SKILL_ROOT=$(find ~/.claude/plugins/cache/nandi-services/doc-governance-skill -name 'SKILL.md' -not -path '*/node_modules/*' | head -1 | xargs dirname)` (fallback a `~/.claude/skills/doc-governance-skill` o `.ai/skills/doc-governance-skill`).
+1. Ubicá el skill root usando el bloque de `SKILL.md` → `## Root Invocation Behavior` → `### Cold-start guard`, paso 1. Es la fuente canónica: resuelve vía `bin/which.js`, que elige la copia de versión más alta cuando hay varias instaladas. No repliques el snippet acá — se desincroniza.
 2. Corré: `node "$SKILL_ROOT/bin/audit.js"`
 3. Emitir al user, textual, en una sola respuesta corta:
 
@@ -31,7 +31,7 @@ test -f .doc-governance/map.md && echo "map exists" || echo "no map"
 
 ## Acción (steady-state, map ya existe)
 
-Leé el `SKILL.md` en la raíz del skill (`~/.claude/plugins/cache/nandi-services/doc-governance-skill/*/SKILL.md` cuando esté instalado como plugin) y seguí la sección `## Root Invocation Behavior`.
+Resolvé `SKILL_ROOT` como en el paso 1 de arriba, leé `"$SKILL_ROOT/SKILL.md"` y seguí la sección `## Root Invocation Behavior`.
 
 ## Resumen del flujo (referencia rápida)
 

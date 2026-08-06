@@ -1,25 +1,8 @@
 <!-- doc-governance:map v1 -->
-sealed_sha: 6ae02d7f57b21bc3c3bc1b7ad4dfc0e5d1805f7d
-sealed_at: 2026-08-06T04:26:36.578Z
+sealed_sha: f0658b37de6d4068747477c8b60ddb538a699dea
+sealed_at: 2026-08-06T05:30:59.748Z
 tool_version: 0.9.0
-sealed_dirty:
-  - 7f42448dc12a253547a8cedd75be2b9886cf0148 .github/scripts/release.sh
-  - f5c5ecefefaf3f746ac8ab1189ca6b534d43aab9 .github/workflows/ci.yml
-  - 62243c83799f9b269bcd637a827bb481b5dc5944 CHANGELOG.md
-  - a211c93446172327b7c5044d0b53922df1e1db9d CLAUDE.md
-  - 7d98e3710d0e2a33a980f6cd3e41730128b37186 README.md
-  - 1ffaa77bdc29bc45f3ea737e1bbe065b402d67bb RELEASE_CHECKLIST.md
-  - 6f51981dae823ca5d71d9fc5bbfa4121089ec989 ROADMAP.md
-  - 566c35d7713fc035dc64eb1403682b1bb20242eb SKILL.md
-  - ebc955f0dff239a8141f63efd4d35d4a17597ae5 bin/audit.js
-  - c001f984a6436936735f26665217fa15dcff5faa bin/lib/diff-classify.js
-  - 1d2708c387f0f20c07dc5271ba37e143b1515f2b bin/lib/dirty.js
-  - e85b9338d0d032577cde9919efdbdbd1605a9853 bin/lib/scan.js
-  - 91dad722301f71e094633086c0675ccc053b95f9 bin/lib/self-test-update.js
-  - 45096d11b20699bd969c85fafd563e403be3cf45 bin/lib/sync-exclude-dirs.js
-  - 2432becccef9eae857bf5644083725c11f9c4fb0 bin/lib/version.js
-  - 8321a49cbec54e12c53d3ca37b1742540fdd6048 bin/update.js
-  - 9a44c172723e3f5a4da3927ca03b7322ee07fed3 commands/update.md
+sealed_dirty: []
 
 ## Inventory
 

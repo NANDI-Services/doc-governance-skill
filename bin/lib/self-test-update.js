@@ -26,12 +26,21 @@ function runUpdate(script, cwd) {
   catch (e) { return (e.stdout || '') + (e.stderr || ''); }
 }
 
-function initRepo(prefix) {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
-  run('git', ['init', '--quiet'], tmp);
+// A user's global core.hooksPath fires in temp repos too. On the machine this
+// was written for that meant every test commit kicked off a background graphify
+// rebuild, which then wrote graphify-out/ into the fixture and broke a
+// "nothing changed" assertion. Point hooksPath at a directory that isn't there.
+function isolateRepo(tmp) {
+  run('git', ['config', 'core.hooksPath', path.join(tmp, '.no-hooks')], tmp);
   run('git', ['config', 'user.email', 'test@example.com'], tmp);
   run('git', ['config', 'user.name', 'Test'], tmp);
   run('git', ['config', 'commit.gpgsign', 'false'], tmp);
+}
+
+function initRepo(prefix) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  run('git', ['init', '--quiet'], tmp);
+  isolateRepo(tmp);
   return tmp;
 }
 
@@ -395,6 +404,85 @@ function demoVersionFilesAgree() {
   console.log('ok  version lockstep — SKILL.md, version.js and plugin.json agree');
 }
 
+// The release escape hatch. It only gets used during an emergency — the worst
+// moment to discover it is broken — so it needs coverage more than most code.
+function fakeReleaseRepo(prefix, skillVersion) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  run('git', ['init', '--quiet'], tmp);
+  // `main`, not whatever this git defaults to: preflight requires it.
+  run('git', ['symbolic-ref', 'HEAD', 'refs/heads/main'], tmp);
+  isolateRepo(tmp);
+
+  fs.mkdirSync(path.join(tmp, 'bin', 'lib'), { recursive: true });
+  fs.mkdirSync(path.join(tmp, '.claude-plugin'), { recursive: true });
+  fs.writeFileSync(path.join(tmp, 'SKILL.md'), '---\nname: x\nversion: ' + skillVersion + '\n---\n');
+  fs.writeFileSync(path.join(tmp, 'CHANGELOG.md'), '# Changelog\n\n');
+  fs.writeFileSync(path.join(tmp, 'bin', 'lib', 'version.js'), "const TOOL_VERSION = '" + skillVersion + "';\n");
+  fs.writeFileSync(path.join(tmp, '.claude-plugin', 'plugin.json'), '{\n  "version": "' + skillVersion + '"\n}\n');
+
+  run('git', ['add', '.'], tmp);
+  run('git', ['commit', '-m', 'base', '--quiet'], tmp);
+  run('git', ['tag', '-a', 'v0.9.0', '-m', 'v0.9.0'], tmp);
+  fs.writeFileSync(path.join(tmp, 'feature.txt'), 'work\n');
+  run('git', ['add', '.'], tmp);
+  run('git', ['commit', '-m', 'feat: something', '--quiet'], tmp);
+  return tmp;
+}
+
+// bash needs forward slashes even on Windows.
+const RELEASE_SH = path.join(__dirname, '..', '..', '.github', 'scripts', 'release.sh').replace(/\\/g, '/');
+
+function demoReleaseDryRun() {
+  // Pinned 0.9.5 beats the 0.9.1 auto-bump, exercising the rule that actually
+  // confuses people — and the dry run must show BOTH numbers, not just the winner.
+  const tmp = fakeReleaseRepo('doc-gov-release-dry-', '0.9.5');
+  try {
+    const out = run('bash', [RELEASE_SH, '--dry-run'], tmp);
+
+    assert(/auto-bump: patch -> 0\.9\.1/.test(out), 'must show the auto-bump it computed\n---\n' + out);
+    assert(/Honoring SKILL\.md/.test(out), 'must show that the pinned version won\n---\n' + out);
+    assert(/would release: v0\.9\.5/.test(out), 'must announce the honored version\n---\n' + out);
+    assert(/dry run: nothing was modified/.test(out), 'must state it changed nothing\n---\n' + out);
+
+    assert.strictEqual(
+      run('git', ['status', '--porcelain'], tmp).trim(), '',
+      'a dry run must not modify the working tree'
+    );
+    assert.strictEqual(
+      run('git', ['tag'], tmp).trim(), 'v0.9.0',
+      'a dry run must not create tags'
+    );
+
+    console.log('ok  release.sh --dry-run — reports the plan and mutates nothing');
+  } finally {
+    try { fs.rmSync(tmp, { recursive: true, force: true }); } catch {}
+  }
+}
+
+function demoReleasePreflightRefuses() {
+  const tmp = fakeReleaseRepo('doc-gov-release-refuse-', '0.9.5');
+  try {
+    fs.writeFileSync(path.join(tmp, 'SKILL.md'), '---\nname: x\nversion: 0.9.5\n---\nedit sin commitear\n');
+
+    let out = '', status = 0;
+    try { out = run('bash', [RELEASE_SH], tmp); }
+    catch (e) { status = e.status; out = (e.stdout || '') + (e.stderr || ''); }
+
+    assert.notStrictEqual(status, 0, 'a real run on a dirty tree must fail\n---\n' + out);
+    assert(/working tree is dirty/.test(out), 'the message must name the actual problem\n---\n' + out);
+    // Proves it stopped AT preflight rather than failing later for some other reason.
+    assert(!/would release/.test(out), 'must abort before computing a release\n---\n' + out);
+    assert.strictEqual(
+      run('git', ['tag'], tmp).trim(), 'v0.9.0',
+      'a refused run must leave no tags behind'
+    );
+
+    console.log('ok  release.sh preflight — refuses to release from a dirty tree');
+  } finally {
+    try { fs.rmSync(tmp, { recursive: true, force: true }); } catch {}
+  }
+}
+
 demo();
 demoIgnore();
 demoVersionDrift();
@@ -403,3 +491,5 @@ demoResealCarry();
 demoSyncExcludeDirs();
 demoWhich();
 demoVersionFilesAgree();
+demoReleaseDryRun();
+demoReleasePreflightRefuses();

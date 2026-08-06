@@ -1,7 +1,63 @@
 #!/usr/bin/env bash
-# CI-only. Runs on ubuntu-latest via .github/workflows/release.yml.
-# Uses GNU sed (-i without suffix). Not portable to macOS BSD sed as-is.
+# Release driver. Normally invoked by .github/workflows/release.yml, but it is
+# plain git/sed/gh/node and runs just as well from a maintainer's machine —
+# which is the point. On 2026-08-06 GitHub Actions went down without ever
+# creating a workflow run, and a release that only exists inside Actions has no
+# way out of that. This script is the escape hatch.
+#
+#   bash .github/scripts/release.sh --dry-run   # show the plan, change nothing
+#   bash .github/scripts/release.sh             # actually release
+#
+# Requires GNU sed (-i with no suffix); preflight() checks for it rather than
+# letting a BSD sed corrupt the version files halfway through.
 set -euo pipefail
+
+DRY_RUN=0
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=1 ;;
+    *) echo "unknown argument: $arg (expected --dry-run or nothing)" >&2; exit 2 ;;
+  esac
+done
+
+die() { echo "preflight: $1" >&2; exit 1; }
+
+# Conditions that only matter when we are about to mutate. In --dry-run they are
+# reported and tolerated, so "am I published?" stays answerable mid-change.
+soft() {
+  if [ "$DRY_RUN" = 1 ]; then echo "preflight warning: $1" >&2; else die "$1"; fi
+}
+
+preflight() {
+  local branch
+  branch=$(git rev-parse --abbrev-ref HEAD)
+  [ "$branch" = "main" ] || die "on branch '$branch', expected main"
+
+  # These are checked even in --dry-run: learning the real run would fail is
+  # exactly what a dry run is for.
+  command -v node >/dev/null 2>&1 || die "node not found in PATH (the release re-seals the baseline with bin/audit.js)"
+  sed --version 2>/dev/null | grep -q GNU || die "sed is not GNU sed; the in-place substitutions would corrupt the version files"
+  gh auth status >/dev/null 2>&1 || die "gh is not authenticated; the run would push commits and tags and only then fail at 'gh release create'"
+
+  # release.sh commits SKILL.md, bin/lib/version.js, .claude-plugin/plugin.json,
+  # CHANGELOG.md and .doc-governance/map.md — precisely the files a maintainer
+  # tends to have open. Unrelated edits there would ride along in the release commit.
+  [ -z "$(git status --porcelain)" ] || soft "working tree is dirty; uncommitted edits to the version files would be swept into the release commit"
+
+  # In CI the checkout IS origin/main by construction; proving it would cost a
+  # network round trip for a tautology.
+  if [ -z "${GITHUB_ACTIONS:-}" ]; then
+    if git fetch --quiet origin main 2>/dev/null; then
+      [ "$(git rev-parse HEAD)" = "$(git rev-parse FETCH_HEAD)" ] ||
+        soft "main and origin/main have diverged; push or pull before releasing"
+    else
+      soft "cannot reach origin to compare with origin/main"
+    fi
+  fi
+
+  echo "preflight: ok (branch $branch, node, GNU sed, gh authenticated)"
+}
+preflight
 
 LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
 LAST_VERSION="${LAST_TAG#v}"
@@ -29,6 +85,7 @@ case "$BUMP" in
   patch) NEW_MAJOR=$MAJOR; NEW_MINOR=$MINOR; NEW_PATCH=$((PATCH+1)) ;;
 esac
 NEW_VERSION="$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH"
+AUTO_VERSION="$NEW_VERSION"
 
 # Honor a manually-pinned higher version in SKILL.md (e.g. first release under this pipeline).
 HIGHER=$(printf '%s\n%s\n' "$CURRENT_VERSION" "$NEW_VERSION" | sort -V | tail -1)
@@ -43,6 +100,17 @@ TODAY=$(date -u +%Y-%m-%d)
 # If tag already exists (idempotent re-run), stop cleanly.
 if git rev-parse "$NEW_TAG" >/dev/null 2>&1; then
   echo "Tag $NEW_TAG already exists. Skipping."
+  exit 0
+fi
+
+# Report both the auto-bump and the pin, not just the winner. Hiding the
+# intermediate step is what makes this rule confusing in the first place.
+COMMIT_COUNT=$(printf '%s\n' "$COMMITS" | grep -c . || true)
+echo "last tag: $LAST_TAG   auto-bump: $BUMP -> $AUTO_VERSION"
+echo "would release: $NEW_TAG  ($COMMIT_COUNT commit(s) since $LAST_TAG)"
+
+if [ "$DRY_RUN" = 1 ]; then
+  echo "dry run: nothing was modified."
   exit 0
 fi
 

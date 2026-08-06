@@ -29,6 +29,10 @@ jobs:
         run: node bin/lib/diff-classify.self-test.js
 
       - name: Update-mode integration smokes
+        # GH_TOKEN so release.sh's preflight can verify `gh auth status`, the
+        # same check it runs during a real release.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node bin/lib/self-test-update.js
 
   # Deliberately NOT gated here: whether .doc-governance/map.md is current.

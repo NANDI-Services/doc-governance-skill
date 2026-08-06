@@ -3,6 +3,11 @@ name: release
 on:
   push:
     branches: [main]
+  # Manual re-trigger for a run that failed or never started. Note this is NOT a
+  # remedy for an Actions outage — a dispatch is scheduled by the same control
+  # plane that would be down. For that case use the local path:
+  #   bash .github/scripts/release.sh --dry-run
+  workflow_dispatch:
 
 permissions:
   contents: write

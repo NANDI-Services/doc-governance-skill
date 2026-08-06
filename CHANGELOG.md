@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.9.2] - 2026-08-06
+
+Un release que no se puede publicar sin GitHub Actions no es un release: es una dependencia. El 2026-08-06 Actions entró en `major_outage`, el push de 0.9.1 llegó a `main` y ningún workflow arrancó — sin forma de destrabarlo.
+
+### Added
+- **`release.sh --dry-run`** — corre el preflight, calcula la versión que saldría, imprime el plan y no toca nada: sin `sed`, sin `git add`, sin `gh`. Reporta **el auto-bump y la versión fijada por separado** (`auto-bump: patch -> 0.9.1` / `Honoring SKILL.md` / `would release: v0.9.5`), porque mostrar sólo el ganador esconde justo la regla que confunde. Existe porque el script **no** es seguro de correr "para chequear": es idempotente sólo cuando no hay trabajo pendiente; si lo hay, publica. Con esto, "¿estoy publicado?" cuesta un comando y no exige acordarse de nada.
+- **Preflight en `release.sh`** — verifica rama `main`, `node` en PATH, que `sed` sea GNU, `gh` autenticado, árbol limpio y sincronía con `origin/main`. Corre también en CI, para que no se pudra por falta de uso; sólo el chequeo de sincronía se saltea ahí, donde es tautológico. El árbol limpio y la sincronía son *soft* en `--dry-run`: avisan en vez de abortar, así el dry-run sigue siendo útil con trabajo a medio hacer. El hazard concreto que cubre: el script hace `git add` de `SKILL.md`, `bin/lib/version.js`, `.claude-plugin/plugin.json`, `CHANGELOG.md` y `.doc-governance/map.md` — justo los archivos que un maintainer suele tener abiertos, que se colarían en el commit `chore(release):`.
+- **`workflow_dispatch` en `release.yml`** — para re-lanzar una corrida que falló. Documentado explícitamente como **no** remedio ante una caída de Actions: un dispatch lo agenda el mismo control plane que estaría caído. Para ese caso, el camino local. El `if:` del job no se tocó: en un dispatch `github.event.head_commit` es `null` y `contains(null, …)` da `false`.
+- **Dos casos de self-test** para el camino de emergencia, que sólo se usaría en una crisis — el peor momento para descubrir que está roto. `demoReleaseDryRun` verifica que anuncia la versión correcta (con una versión fijada que le gana al auto-bump) y que no deja ni un archivo ni un tag tocado; `demoReleasePreflightRefuses` verifica que **se niega** ante un árbol sucio y aborta antes de calcular nada. Un preflight que nunca dice que no, no es un preflight.
+
+### Fixed
+- **Los self-tests no estaban aislados de los git hooks globales.** Con `core.hooksPath` configurado a nivel usuario, cada commit de cada fixture disparaba los hooks del maintainer — en la máquina donde se escribió esto, un rebuild de graphify en background que además escribía `graphify-out/` dentro del repo temporal. Se detectó porque rompió el aserto "el dry-run no modificó nada". Ahora cada repo de prueba apunta `core.hooksPath` a un directorio inexistente.
+
+### Notes
+- Evidencia medida durante la caída, para no re-investigarla: Actions **nunca creó la corrida** (`/check-suites` del commit devolvió `devin-ai-integration` y `socket-security`, ninguna de `github-actions`), así que un runner self-hosted no habría ayudado — un runner consulta a ese mismo control plane, y el failover lo dispararía justamente lo que está caído. Además el repo es público, donde GitHub desaconseja runners self-hosted.
+- **La distribución sigue `main`, no los tags.** Verificado refrescando el marketplace registrado: bajó `0.9.1`, que es `main` sin taggear. Los consumidores reciben el código al pushear; el tag y el Release son metadata. Por eso la caída nunca los bloqueó, y por eso 0.9.1 se publica como tag propio en vez de absorberse acá: para la distribución ya salió, y dos árboles distintos llamándose igual es la ambigüedad que este skill existe para detectar.
+- Diseño completo en `docs/superpowers/specs/2026-08-06-release-manual-path-design.md`.
+
 ## [0.9.1] - 2026-08-06
 
 0.9.0 made a stale **baseline** impossible to miss. This closes the twin hole it left untouched: knowing **which copy of the skill is running**. Found by auditing a real install right after shipping 0.9.0.

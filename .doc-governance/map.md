@@ -1,22 +1,19 @@
 <!-- doc-governance:map v1 -->
-sealed_sha: 5a4ebb71d93baaadefcfcdaf5a93a577fb5f1406
-sealed_at: 2026-08-06T17:12:55.615Z
-tool_version: 0.9.1
+sealed_sha: 1ff0038e9fabbf5a698ab7dad9e7c74739c92270
+sealed_at: 2026-08-06T20:49:37.566Z
+tool_version: 0.9.2
 sealed_dirty:
-  - 9510756708cdc16055f24982e2a78c6ae931248b .claude-plugin/marketplace.json
-  - 9958a03b96893273d6c7ccd1173caa92df1ebf21 .claude-plugin/plugin.json
-  - fdb81d3434ee92b0f19e6b62f6a8cac1319143f0 .github/scripts/release.sh
-  - 4891a2ea54998c7a7e60d8f90ab75672f2b3ba19 CHANGELOG.md
-  - ae3d6a4d7b0139440fa46e1381f06ac8bc5d4655 CLAUDE.md
-  - 9bfe1a76c84df2bd25c5f29cdf45e6b7d9ea472e README.md
-  - 17e1cf7c28219d2490c8aaae16430112e3b1f260 RELEASE_CHECKLIST.md
-  - 3fccf5ee7964de727312d1292678835e6aa9c77e SKILL.md
-  - 8b50f72c36b5f87803b041c0f94f885a69ff2669 bin/audit.js
-  - 000cb59dfbf088455b932d86a122d86bf5654e30 bin/lib/self-test-update.js
-  - 1fd4aceb9d37dbae821e81834657032324dcfd32 bin/lib/version.js
-  - c8c2adf5b1a46adc9d25b26099904a1c70aa2ade bin/update.js
-  - f641f22d0ae04a73ca13eae6d4b407de06ddb466 bin/which.js
-  - 64f5521519ce7edefeb09d09961b9714a14d4317 commands/review.md
+  - 8337b774c3de0292ad30745a8ce1e0af172f01c8 .claude-plugin/plugin.json
+  - 29e8c90c6df41ca0b4efe5f3d101d5bba07c36f0 .github/scripts/release.sh
+  - ed0bb51bf3201feedececb8010a817e94c55e0d3 .github/workflows/ci.yml
+  - bb57dd74fed79a4160470467e99c8f15835f40cb .github/workflows/release.yml
+  - 6972ed73cd16c159915a87072fbe4c1f10285d55 CHANGELOG.md
+  - 620718215f66bf56406e2138800a5d096e3a9031 CLAUDE.md
+  - 9a80663dc9b12c7320134cd50e3977486ec87fa9 RELEASE_CHECKLIST.md
+  - 7c97449d5159231be8985a9f9a0e4d9be554c7a4 SKILL.md
+  - c06df70967a8e9ea904108092e97c36e2abdacf4 bin/lib/self-test-update.js
+  - b54a4bbea20e7c897d48aa940e7fb14843b602c7 bin/lib/version.js
+  - bc61c26a3e093808d2573f7c6224a6c98a0d6d56 docs/superpowers/specs/2026-08-06-release-manual-path-design.md
 
 ## Inventory
 
@@ -34,6 +31,10 @@ code_refs:
 title: Changelog
 headings:
   - H1: Changelog
+  - H2: [0.9.2] - 2026-08-06
+  - H3: Added
+  - H3: Fixed
+  - H3: Notes
   - H2: [0.9.1] - 2026-08-06
   - H3: Added
   - H3: Changed
@@ -106,9 +107,12 @@ code_refs:
   - .github/workflows/release.yml
   - .md
   - /
+  - /check-suites
   - /doc-governance-skill
   - 0.8.0
+  - 0.9.1
   - AGENTS.md
+  - CHANGELOG.md
   - CLAUDE.md
   - CODE_OF_CONDUCT.md
   - CONTRIBUTING.md
@@ -133,9 +137,12 @@ code_refs:
   - commands/doc-governance-skill.md
   - commands/review.md
   - core.autocrlf
+  - core.hooksPath
+  - docs/superpowers/specs/2026-08-06-release-manual-path-design.md
   - graphify-out/
   - install.ps1
   - install.sh
+  - origin/main
   - owner/repo
   - release.sh
   - release.yml
@@ -189,6 +196,7 @@ code_refs:
   - install.sh
   - owner/repo
   - package.json
+  - release.sh
   - review.md
   - skills/
   - templates/
@@ -298,6 +306,7 @@ headings:
   - H1: Release Checklist
   - H2: Discovery and Metadata
   - H2: Version and Changelog
+  - H2: Release Dry Run (v0.9.2+)
   - H2: Generated Content and CI
   - H2: Documentation Quality
   - H2: Script Safety
@@ -553,6 +562,46 @@ code_refs:
   - templates/pre-commit-doc-check.sh
   - uninstall.sh
   - update.js
+
+### docs/superpowers/specs/2026-08-06-release-manual-path-design.md
+title: Camino manual de release — diseño
+headings:
+  - H1: Camino manual de release — diseño
+  - H2: Problema
+  - H2: Evidencia recogida
+  - H2: Objetivos
+  - H2: No-objetivos
+  - H2: Diseño
+  - H3: Nada de modo dual
+  - H3: Preflight
+  - H3: `--dry-run`
+  - H3: `workflow_dispatch`
+  - H3: Tests
+  - H3: Versión: 0.9.2
+  - H2: Archivos afectados
+  - H2: Verificación
+  - H2: Riesgos
+  - H2: Nota lateral
+code_refs:
+  - .claude-plugin/plugin.json
+  - .doc-governance/map.md
+  - .github/scripts/release.sh
+  - .github/workflows/release.yml
+  - .md
+  - 0.9.0
+  - 0.9.1
+  - CHANGELOG.md
+  - CLAUDE.md
+  - RELEASE_CHECKLIST.md
+  - SKILL.md
+  - bin/audit.js
+  - bin/lib/self-test-update.js
+  - bin/lib/version.js
+  - github.event.head_commit.message
+  - origin/main
+  - release.sh
+  - release.yml
+  - v0.9.1
 
 ### templates/AGENTS.append.md
 title: (untitled)

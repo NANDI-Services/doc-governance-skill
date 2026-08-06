@@ -54,6 +54,19 @@ Team-bundling distribution: `install.sh` / `install.ps1` copy the skill into a s
 
 `.github/workflows/release.yml` runs `.github/scripts/release.sh` on every push to `main` (unless the commit message contains `[skip release]` or starts with `chore(release):`). Uses `RELEASE_TOKEN` (not `GITHUB_TOKEN`) so the release commit can trigger downstream workflows.
 
+**`release.sh` also runs locally, and that is the point.** It is plain git/sed/gh/node with nothing Actions-specific:
+
+```bash
+bash .github/scripts/release.sh --dry-run   # show the plan, change nothing
+bash .github/scripts/release.sh             # release from here
+```
+
+Actions is the convenience path, not the requirement. On 2026-08-06 it went down without ever creating a workflow run — `workflow_dispatch` is useless in that case, because a dispatch is scheduled by the same control plane that is down. The local path is the only real escape hatch, so it must keep working: `preflight()` runs in CI too, and `demoReleaseDryRun` / `demoReleasePreflightRefuses` cover it. An emergency path that is never exercised does not work when the emergency arrives.
+
+**`--dry-run` is how you answer "is this published?"** Do not run the script bare to find out — it is idempotent only when there is nothing to do; when there is, it publishes.
+
+**Distribution follows `main`, not tags** (verified 2026-08-06 by refreshing the registered marketplace: it pulled the untagged `main` version, not the latest tag). Consumers get the code on push; the tag and GitHub Release are metadata for humans. So a failed release never blocks users — it leaves the repo internally inconsistent, which is a smaller and slower problem. Judge urgency accordingly.
+
 Bump rules from commit messages since last tag:
 - `[major]` or `BREAKING CHANGE` → major
 - `[minor]` → minor

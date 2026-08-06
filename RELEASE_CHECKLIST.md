@@ -14,6 +14,11 @@ Use this checklist before publishing a new tag.
 - [ ] `CHANGELOG.md` has a hand-written section for this version. `release.sh` skips its auto-prepend when the section already exists.
 - [ ] If this release changed `EXCLUDE_DIRS` or ignore semantics, `SCAN_UNIVERSE_VERSIONS` in `bin/lib/version.js` has a matching entry — otherwise consumers' stale baselines will not be flagged.
 
+## Release Dry Run (v0.9.2+)
+- [ ] `bash .github/scripts/release.sh --dry-run` announces the expected tag, and its `auto-bump` / `Honoring SKILL.md` lines match what you intended.
+- [ ] `git status --short` is unchanged afterwards (a dry run must never mutate).
+- [ ] If Actions is unavailable, `bash .github/scripts/release.sh` publishes from here. `workflow_dispatch` does **not** help during an Actions outage — the dispatch is scheduled by the same control plane.
+
 ## Generated Content and CI
 - [ ] `node bin/lib/sync-exclude-dirs.js --check` exits 0 (the exclusion list in `SKILL.md` is generated from `EXCLUDE_DIRS`; never hand-edit it).
 - [ ] `node bin/lib/diff-classify.self-test.js` passes.

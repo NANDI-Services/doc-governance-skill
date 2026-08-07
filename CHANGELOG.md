@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.4] - 2026-08-07
+
+### Added
+- **`workflow_dispatch` en `ci.yml`.** 0.9.2 se lo agregó a `release.yml` y se lo salteó acá, que es el workflow que uno realmente quiere re-lanzar a mano: durante la caída de Actions los checks quedaron sin correr sobre commits cuyo push nunca se registró, y no había forma de dispararlos. Se descubrió al intentar usarlo.
+
+### Notes
+- Verificado en el runner tras la recuperación de Actions: el `workflow_dispatch` de `release.yml` corre, el `if:` del job deja pasar el disparo manual (`github.event.head_commit` es `null`, así que `contains(null, …)` da `false` — estaba razonado en 0.9.2, ahora está probado), el preflight pasa sus cuatro chequeos en Ubuntu, y la guarda de no-op frena sin publicar cuando no hay commits nuevos.
+
 ## [0.9.3] - 2026-08-06
 
 ### Added

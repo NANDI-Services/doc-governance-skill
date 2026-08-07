@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Manual trigger. Added after the 2026-08-06 Actions outage, where the checks
+  # could not be re-run against a commit whose push event was never registered.
+  # release.yml got this in 0.9.2; leaving it off ci.yml was an oversight — this
+  # is the workflow you actually want to re-run by hand.
+  workflow_dispatch:
 
 permissions:
   contents: read

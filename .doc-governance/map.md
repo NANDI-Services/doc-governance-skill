@@ -1,8 +1,13 @@
 <!-- doc-governance:map v1 -->
-sealed_sha: 6da80be855d232c0108cbbbd5d0792d23d5bf4eb
-sealed_at: 2026-08-06T21:20:30.704Z
-tool_version: 0.9.3
-sealed_dirty: []
+sealed_sha: b0b54c8d1d88606d89cb929c01a6eca154391626
+sealed_at: 2026-08-07T00:29:13.090Z
+tool_version: 0.9.4
+sealed_dirty:
+  - 64c193b74778cec6df857dbaef2279527a4de28d .claude-plugin/plugin.json
+  - 8ced17d19ddc11e589c593d017eade1211324432 .github/workflows/ci.yml
+  - 82e5baa9053f5b05639e37ccb3cb02f8928fa933 CHANGELOG.md
+  - e28c30806fe7db7501a454c237d97e0148614ba4 SKILL.md
+  - ba4cd5f31a027cbd4af19eda7c1268838737795a bin/lib/version.js
 
 ## Inventory
 
@@ -20,6 +25,9 @@ code_refs:
 title: Changelog
 headings:
   - H1: Changelog
+  - H2: [0.9.4] - 2026-08-07
+  - H3: Added
+  - H3: Notes
   - H2: [0.9.3] - 2026-08-06
   - H3: Added
   - H3: Notes
@@ -125,6 +133,7 @@ code_refs:
   - bin/lib/version.js
   - bin/update.js
   - bin/which.js
+  - ci.yml
   - commands/
   - commands/doc-governance-skill.md
   - commands/review.md

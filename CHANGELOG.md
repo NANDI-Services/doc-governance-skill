@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.5] - 2026-08-07
+
+### Fixed
+- **`README.md` §Updating**: la instrucción de skills.sh no advertía que **`npx skills add` resuelve su destino desde el directorio actual**. Corrido dentro de un repo deja además una copia en `<repo>/.agents/skills/`, que no se actualiza cuando después upgradeás desde otro lado — precisamente la convivencia de versiones que `bin/which.js` existe para detectar. Ahora el comando lleva `cd ~ &&` y el párrafo explica el porqué y cómo limpiarlo.
+
+### Notes
+- Encontrado ejecutando la propia instrucción: la sección se escribió en 0.9.3 y su primer uso real la contradijo en el mismo día. Una instrucción de instalación se verifica corriéndola, no releyéndola.
+
 ## [0.9.4] - 2026-08-07
 
 ### Added

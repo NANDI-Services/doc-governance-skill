@@ -182,8 +182,10 @@ Both commands, in that order: the marketplace is a cached catalog stored separat
 **skills.sh:** re-run the install command; it updates in place.
 
 ```bash
-npx skills add NANDI-Services/doc-governance-skill
+cd ~ && npx skills add NANDI-Services/doc-governance-skill
 ```
+
+**Run it from your home directory, not from inside a project.** `npx skills add` resolves its install target from the current working directory: run inside a repo, it also drops a project-local copy under `<repo>/.agents/skills/`. That copy does not update when you later upgrade from elsewhere, and a stale one competing with your user-level install is exactly the split this skill's `bin/which.js` exists to detect. If you already did this, `which.js --verbose` will list both — delete the project-local one unless you meant to pin it.
 
 **Team bundling:** pull the skill repo and re-run `./install.sh` (or `install.ps1`). Both are idempotent — re-running is the update.
 

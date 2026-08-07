@@ -1,8 +1,14 @@
 <!-- doc-governance:map v1 -->
-sealed_sha: 591657545a92461cdce76bd78dd04885859c7c05
-sealed_at: 2026-08-07T00:30:26.435Z
-tool_version: 0.9.4
-sealed_dirty: []
+sealed_sha: 8741e096e238e0cbfe27585f6009c0194f73218c
+sealed_at: 2026-08-07T01:36:19.970Z
+tool_version: 0.9.5
+sealed_dirty:
+  - e80f57ea8f9ecc0c4c5992d3b365f5f08a1b4c70 .claude-plugin/plugin.json
+  - ec7a671f5442a4cf05bd46d0165a2ccc164251e9 CHANGELOG.md
+  - 60be7a1606d6c326b66c5dfee49ddbc534de084e CLAUDE.md
+  - 67205445abc7e756737da314b32afc4956ff3ab4 README.md
+  - 9d3315eb7c673f7c9a671e0f68f2e615ff458d0b SKILL.md
+  - c2fadb7bd3eabd7611c5acb61fc2937e65107096 bin/lib/version.js
 
 ## Inventory
 
@@ -20,6 +26,9 @@ code_refs:
 title: Changelog
 headings:
   - H1: Changelog
+  - H2: [0.9.5] - 2026-08-07
+  - H3: Fixed
+  - H3: Notes
   - H2: [0.9.4] - 2026-08-07
   - H3: Added
   - H3: Notes
@@ -188,6 +197,8 @@ code_refs:
   - commands/doc-governance-skill.md
   - commands/review.md
   - commands/update.md
+  - core.hooksPath
+  - graphify-out/
   - install.ps1
   - install.sh
   - owner/repo

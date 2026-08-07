@@ -1,13 +1,8 @@
 <!-- doc-governance:map v1 -->
-sealed_sha: b0b54c8d1d88606d89cb929c01a6eca154391626
-sealed_at: 2026-08-07T00:29:13.090Z
+sealed_sha: 591657545a92461cdce76bd78dd04885859c7c05
+sealed_at: 2026-08-07T00:30:26.435Z
 tool_version: 0.9.4
-sealed_dirty:
-  - 64c193b74778cec6df857dbaef2279527a4de28d .claude-plugin/plugin.json
-  - 8ced17d19ddc11e589c593d017eade1211324432 .github/workflows/ci.yml
-  - 82e5baa9053f5b05639e37ccb3cb02f8928fa933 CHANGELOG.md
-  - e28c30806fe7db7501a454c237d97e0148614ba4 SKILL.md
-  - ba4cd5f31a027cbd4af19eda7c1268838737795a bin/lib/version.js
+sealed_dirty: []
 
 ## Inventory
 
